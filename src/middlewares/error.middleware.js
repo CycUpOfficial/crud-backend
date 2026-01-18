@@ -7,7 +7,7 @@ export const errorHandler = (err, req, res, next) => {
     }
 
     res.status(status).json({
-        error: message,
+        message,
         details: err.details ?? undefined
     });
 };
