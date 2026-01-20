@@ -1,5 +1,11 @@
-import {getUserByEmail, createUserWithVerificationPin} from "../repositories/auth.repository.js";
-import {enqueueVerificationEmail} from "../queues/email.queue.js";
+import bcrypt from "bcryptjs";
+import {
+    getUserByEmail,
+    createUserWithVerificationPin,
+    getVerificationPinByUserId,
+    verifyUserAndSetPassword
+} from "../repositories/auth.repository.js";
+import { enqueueVerificationEmail } from "../queues/email.queue.js";
 
 const TRUSTED_UNIVERSITY_DOMAINS = [
     "abo.fi",
@@ -63,5 +69,58 @@ export const registerUser = async (email) => {
     return {
         message: "Registration successful. Please check your email for verification PIN.",
         userId: user.id
+    };
+};
+
+function failIfPasswordsDoNotMatch(password, passwordConfirmation) {
+    if (password !== passwordConfirmation) {
+        const error = new Error("Passwords do not match. Please ensure both password fields are identical.");
+        error.statusCode = 400;
+        throw error;
+    }
+}
+
+async function failIfUserNotFound(email) {
+    const user = await getUserByEmail(email);
+    if (!user) {
+        const error = new Error("Not found.");
+        error.statusCode = 404;
+        throw error;
+    }
+
+    return user;
+}
+
+function failIfPinInvalid(pinRecord, pinCode) {
+    if (!pinRecord) {
+        const error = new Error("Invalid PIN code. Please check your email and try again.");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const isExpired = pinRecord.expiresAt && new Date(pinRecord.expiresAt) < new Date();
+    const isMismatch = pinRecord.pinCode !== pinCode;
+
+    if (isExpired || isMismatch) {
+        const error = new Error("Invalid PIN code. Please check your email and try again.");
+        error.statusCode = 400;
+        throw error;
+    }
+}
+
+export const verifyUser = async ({ email, pinCode, password, passwordConfirmation }) => {
+    failIfPasswordsDoNotMatch(password, passwordConfirmation);
+
+    const user = await failIfUserNotFound(email);
+    const pinRecord = await getVerificationPinByUserId(user.id);
+
+    failIfPinInvalid(pinRecord, pinCode);
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    await verifyUserAndSetPassword(user.id, passwordHash);
+
+    return {
+        message: "Email verified successfully",
+        verified: true
     };
 };
