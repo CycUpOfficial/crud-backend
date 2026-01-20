@@ -18,6 +18,9 @@ services:
       DB_NAME: app_db
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      MAIL_FROM: "no-reply@cycup.local"
     depends_on:
       db:
         condition: service_healthy
@@ -42,6 +45,9 @@ services:
       DB_NAME: app_db
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      MAIL_FROM: "no-reply@cycup.local"
     depends_on:
       db:
         condition: service_healthy
@@ -77,6 +83,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025"
+      - "1025:1025"
 
 volumes:
   pgdata:

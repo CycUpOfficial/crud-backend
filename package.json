@@ -23,6 +23,8 @@
     "zod": "^4.3.5"
   },
   "devDependencies": {
+    "@bull-board/api": "^6.5.3",
+    "@bull-board/express": "^6.5.3",
     "nodemon": "^3.1.7",
     "prisma": "^6.1.0"
   }
