@@ -1,6 +1,6 @@
-import { getUserByEmail, createUserWithVerificationPin } from "../repositories/auth.repository.js";
+import {getUserByEmail, createUserWithVerificationPin} from "../repositories/auth.repository.js";
+import {enqueueVerificationEmail} from "../queues/email.queue.js";
 
-// REPLACED: Regex removed in favor of an allowlist
 const TRUSTED_UNIVERSITY_DOMAINS = [
     "abo.fi",
     "utu.fi"
@@ -30,7 +30,8 @@ function failIfEmailFormatIsInvalid(email) {
     }
 }
 
-function failIfUserAlreadyExists(existingUser) {
+async function failIfUserAlreadyExists(email) {
+    const existingUser = await getUserByEmail(email);
     if (existingUser) {
         const error = new Error("A user with this email already exists.");
         error.statusCode = 400;
@@ -38,16 +39,26 @@ function failIfUserAlreadyExists(existingUser) {
     }
 }
 
+async function sendVerificationEmail({email, pinCode}) {
+    try {
+        await enqueueVerificationEmail({email, pinCode});
+    } catch (queueError) {
+        const error = new Error("Failed to queue verification email.");
+        error.statusCode = 500;
+        error.cause = queueError;
+        throw error;
+    }
+}
+
 export const registerUser = async (email) => {
     failIfEmailFormatIsInvalid(email);
-
-    const existingUser = await getUserByEmail(email);
-    failIfUserAlreadyExists(existingUser);
+    await failIfUserAlreadyExists(email);
 
     const pinCode = generatePinCode();
     const expiresAt = new Date(Date.now() + PIN_EXPIRY_MINUTES * 60 * 1000);
 
     const user = await createUserWithVerificationPin(email, pinCode, expiresAt);
+    await sendVerificationEmail({email, pinCode})
 
     return {
         message: "Registration successful. Please check your email for verification PIN.",
