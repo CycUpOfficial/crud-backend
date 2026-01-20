@@ -11,5 +11,17 @@ export const env = {
         user: process.env.DB_USER ?? "postgres",
         password: process.env.DB_PASSWORD ?? "<DB_PASSWORD>",
         database: process.env.DB_NAME ?? "app_db"
+    },
+    redis: {
+        host: process.env.REDIS_HOST ?? "localhost",
+        port: Number(process.env.REDIS_PORT ?? 6379),
+        password: process.env.REDIS_PASSWORD ?? undefined
+    },
+    mail: {
+        host: process.env.SMTP_HOST ?? "smtp.example.com",
+        port: Number(process.env.SMTP_PORT ?? 587),
+        user: process.env.SMTP_USER ?? "",
+        pass: process.env.SMTP_PASS ?? "",
+        from: process.env.MAIL_FROM ?? "no-reply@cycup.com"
     }
 };
