@@ -39,3 +39,12 @@ export const verifyUserAndSetPassword = (userId, passwordHash) =>
 
         return user;
     });
+
+export const createSession = ({ userId, sessionToken, expiresAt }) =>
+    prisma.session.create({
+        data: {
+            userId,
+            sessionToken,
+            expiresAt
+        }
+    });

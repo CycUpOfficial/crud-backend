@@ -1,5 +1,5 @@
-import { registerUser, verifyUser } from "../services/auth.service.js";
-import { toRegisterResponseDto, toVerifyResponseDto } from "../dtos/auth.dto.js";
+import { registerUser, verifyUser, loginUser } from "../services/auth.service.js";
+import { toRegisterResponseDto, toVerifyResponseDto, toLoginResponseDto } from "../dtos/auth.dto.js";
 
 export const register = async (req, res) => {
     const { email } = req.validated.body;
@@ -11,4 +11,18 @@ export const verify = async (req, res) => {
     const { email, pinCode, password, passwordConfirmation } = req.validated.body;
     const result = await verifyUser({ email, pinCode, password, passwordConfirmation });
     res.status(200).json(toVerifyResponseDto(result));
+};
+
+export const login = async (req, res) => {
+    const { email, password } = req.validated.body;
+    const result = await loginUser({ email, password });
+
+    res.cookie(result.cookieName, result.sessionToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        expires: result.expiresAt
+    });
+
+    res.status(200).json(toLoginResponseDto(result));
 };

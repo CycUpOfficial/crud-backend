@@ -1,9 +1,11 @@
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import {
     getUserByEmail,
     createUserWithVerificationPin,
     getVerificationPinByUserId,
-    verifyUserAndSetPassword
+    verifyUserAndSetPassword,
+    createSession
 } from "../repositories/auth.repository.js";
 import { enqueueVerificationEmail } from "../queues/email.queue.js";
 
@@ -14,6 +16,9 @@ const TRUSTED_UNIVERSITY_DOMAINS = [
 
 const PIN_LENGTH = 6;
 const PIN_EXPIRY_MINUTES = 15;
+const SESSION_EXPIRY_DAYS = 7;
+const SESSION_TOKEN_BYTES = 32;
+const SESSION_COOKIE_NAME = "session_token";
 
 const isUniversityEmail = (email) => {
     if (!email || !email.includes('@')) return false;
@@ -122,5 +127,57 @@ export const verifyUser = async ({ email, pinCode, password, passwordConfirmatio
     return {
         message: "Email verified successfully",
         verified: true
+    };
+};
+
+function failIfUserIsNotVerified(user) {
+    if (!user.isVerified) {
+        const error = new Error("Email address has not been verified. Please check your email for the verification PIN.");
+        error.statusCode = 403;
+        throw error;
+    }
+}
+
+function failIfCredentialsInvalid() {
+    const error = new Error("Invalid email or password. Please check your credentials and try again.");
+    error.statusCode = 401;
+    throw error;
+}
+
+const generateSessionToken = () =>
+    crypto.randomBytes(SESSION_TOKEN_BYTES).toString("hex");
+
+export const loginUser = async ({ email, password }) => {
+    const user = await getUserByEmail(email);
+    if (!user) {
+        failIfCredentialsInvalid();
+    }
+
+    failIfUserIsNotVerified(user);
+
+    const hasPasswordHash = Boolean(user.passwordHash) && user.passwordHash !== "PENDING";
+    if (!hasPasswordHash) {
+        failIfCredentialsInvalid();
+    }
+
+    const passwordMatches = await bcrypt.compare(password, user.passwordHash);
+    if (!passwordMatches) {
+        failIfCredentialsInvalid();
+    }
+
+    const sessionToken = generateSessionToken();
+    const expiresAt = new Date(Date.now() + SESSION_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+
+    await createSession({
+        userId: user.id,
+        sessionToken,
+        expiresAt
+    });
+
+    return {
+        userId: user.id,
+        sessionToken,
+        expiresAt,
+        cookieName: SESSION_COOKIE_NAME
     };
 };

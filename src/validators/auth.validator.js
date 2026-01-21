@@ -33,3 +33,16 @@ export const verifySchema = z.object({
     params: z.object({}).optional(),
     query: z.object({}).optional()
 });
+
+export const loginSchema = z.object({
+    body: z.object({
+        email: z
+            .string()
+            .email("Invalid email address."),
+        password: z
+            .string()
+            .min(1, "Invalid email or password. Please check your credentials and try again.")
+    }),
+    params: z.object({}).optional(),
+    query: z.object({}).optional()
+});
