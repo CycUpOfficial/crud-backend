@@ -48,3 +48,13 @@ export const createSession = ({ userId, sessionToken, expiresAt }) =>
             expiresAt
         }
     });
+
+export const deleteSessionByToken = (sessionToken) =>
+    prisma.session.deleteMany({
+        where: { sessionToken }
+    });
+
+export const deleteSessionsByUserId = (userId) =>
+    prisma.session.deleteMany({
+        where: { userId }
+    });

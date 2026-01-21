@@ -5,7 +5,9 @@ import {
     createUserWithVerificationPin,
     getVerificationPinByUserId,
     verifyUserAndSetPassword,
-    createSession
+    createSession,
+    deleteSessionByToken,
+    deleteSessionsByUserId
 } from "../repositories/auth.repository.js";
 import { enqueueVerificationEmail } from "../queues/email.queue.js";
 
@@ -18,7 +20,7 @@ const PIN_LENGTH = 6;
 const PIN_EXPIRY_MINUTES = 15;
 const SESSION_EXPIRY_DAYS = 7;
 const SESSION_TOKEN_BYTES = 32;
-const SESSION_COOKIE_NAME = "session_token";
+const SESSION_COOKIE_NAME = "session";
 
 const isUniversityEmail = (email) => {
     if (!email || !email.includes('@')) return false;
@@ -165,6 +167,8 @@ export const loginUser = async ({ email, password }) => {
         failIfCredentialsInvalid();
     }
 
+    await deleteSessionsByUserId(user.id);
+
     const sessionToken = generateSessionToken();
     const expiresAt = new Date(Date.now() + SESSION_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
 
@@ -180,4 +184,9 @@ export const loginUser = async ({ email, password }) => {
         expiresAt,
         cookieName: SESSION_COOKIE_NAME
     };
+};
+
+export const logoutUser = async (sessionToken) => {
+    if (!sessionToken) return;
+    await deleteSessionByToken(sessionToken);
 };

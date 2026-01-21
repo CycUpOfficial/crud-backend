@@ -1,4 +1,4 @@
-import { registerUser, verifyUser, loginUser } from "../services/auth.service.js";
+import { registerUser, verifyUser, loginUser, logoutUser } from "../services/auth.service.js";
 import { toRegisterResponseDto, toVerifyResponseDto, toLoginResponseDto } from "../dtos/auth.dto.js";
 
 export const register = async (req, res) => {
@@ -25,4 +25,33 @@ export const login = async (req, res) => {
     });
 
     res.status(200).json(toLoginResponseDto(result));
+};
+
+const parseCookies = (cookieHeader = "") =>
+    cookieHeader
+        .split(";")
+        .map((cookie) => cookie.trim())
+        .filter(Boolean)
+        .reduce((acc, cookie) => {
+            const separatorIndex = cookie.indexOf("=");
+            if (separatorIndex === -1) return acc;
+            const key = cookie.slice(0, separatorIndex).trim();
+            const value = cookie.slice(separatorIndex + 1).trim();
+            acc[key] = decodeURIComponent(value);
+            return acc;
+        }, {});
+
+export const logout = async (req, res) => {
+    const cookies = req.cookies ?? parseCookies(req.headers.cookie);
+    const sessionToken = cookies?.session;
+
+    await logoutUser(sessionToken);
+
+    res.clearCookie("session", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax"
+    });
+
+    res.status(200).end();
 };
