@@ -6,7 +6,9 @@ export const validateRequest = (schema) => (req, res, next) => {
     });
 
     if (!result.success) {
-        const error = new Error("Validation error");
+        const firstIssue = result.error.issues?.[0];
+        const message = firstIssue?.message ?? "Validation error";
+        const error = new Error(message);
         error.statusCode = 400;
         error.details = result.error.flatten();
         return next(error);
