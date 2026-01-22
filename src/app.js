@@ -4,6 +4,7 @@ import cors from "cors";
 import morgan from "morgan";
 import healthRoutes from "./routes/health.routes.js";
 import authRoutes from "./routes/auth.routes.js";
+import { requireAuth } from "./middlewares/auth.middleware.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 
 const app = express();
@@ -34,6 +35,7 @@ const setupBullBoard = async () => {
 
 void setupBullBoard();
 
+app.use("/api", requireAuth);
 app.use("/api", healthRoutes);
 app.use("/api", authRoutes);
 

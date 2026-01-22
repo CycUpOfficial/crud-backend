@@ -1,3 +1,5 @@
+// noinspection NpmUsedModulesInstalled
+
 import { Queue } from "bullmq";
 import { createRedisConnection } from "../utils/redis.js";
 
