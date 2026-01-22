@@ -13,14 +13,18 @@ const PUBLIC_PATHS = new Set([
 
 function passIfRequestMethodIsOptions(req, next) {
     if (req.method === "OPTIONS") {
-        return next();
+        next();
+        return true;
     }
+    return false;
 }
 
 function passIfRequestedResourceIsPublic(req, next) {
     if (PUBLIC_PATHS.has(req.path)) {
-        return next();
+        next();
+        return true;
     }
+    return false;
 }
 
 function failIfNoSessionTokenIsSent(sessionToken, next) {
@@ -31,8 +35,7 @@ function failIfNoSessionTokenIsSent(sessionToken, next) {
     }
 }
 
-async function failIfSessionIsNotValid(sessionToken, next) {
-    const session = await getSessionByToken(sessionToken);
+async function failIfSessionIsNotValid(session, next) {
     if (!session) {
         const error = new Error("Not authorized to take this action.");
         error.statusCode = 401;
@@ -51,15 +54,16 @@ async function failIfSessionHasExpired(session, sessionToken, next) {
 }
 
 export const requireAuth = async (req, res, next) => {
-    passIfRequestMethodIsOptions(req,next);
-    passIfRequestedResourceIsPublic(req,next);
+    if (passIfRequestMethodIsOptions(req, next)) return;
+    if (passIfRequestedResourceIsPublic(req, next)) return;
 
     const cookies = req.cookies ?? parseCookies(req.headers.cookie);
     const sessionToken = cookies?.session;
-    const session = await getSessionByToken(sessionToken);
 
     failIfNoSessionTokenIsSent(sessionToken, next);
-    await failIfSessionIsNotValid(sessionToken, next);
+
+    const session = await getSessionByToken(sessionToken);
+    await failIfSessionIsNotValid(session, next);
     await failIfSessionHasExpired(session, sessionToken, next);
 
     req.auth = {
