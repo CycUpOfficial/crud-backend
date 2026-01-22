@@ -1,5 +1,6 @@
 import { registerUser, verifyUser, loginUser, logoutUser, requestPasswordReset, confirmPasswordReset } from "../services/auth.service.js";
 import { toRegisterResponseDto, toVerifyResponseDto, toLoginResponseDto, toPasswordResetResponseDto, toConfirmPasswordResetResponseDto } from "../dtos/auth.dto.js";
+import { parseCookies } from "../utils/cookieparser.js";
 
 export const register = async (req, res) => {
     const { email } = req.validated.body;
@@ -26,20 +27,6 @@ export const login = async (req, res) => {
 
     res.status(200).json(toLoginResponseDto(result));
 };
-
-const parseCookies = (cookieHeader = "") =>
-    cookieHeader
-        .split(";")
-        .map((cookie) => cookie.trim())
-        .filter(Boolean)
-        .reduce((acc, cookie) => {
-            const separatorIndex = cookie.indexOf("=");
-            if (separatorIndex === -1) return acc;
-            const key = cookie.slice(0, separatorIndex).trim();
-            const value = cookie.slice(separatorIndex + 1).trim();
-            acc[key] = decodeURIComponent(value);
-            return acc;
-        }, {});
 
 export const logout = async (req, res) => {
     const cookies = req.cookies ?? parseCookies(req.headers.cookie);

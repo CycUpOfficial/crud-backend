@@ -1,3 +1,5 @@
+// noinspection JSUnresolvedReference
+
 import { prisma } from "../db/index.js";
 
 export const getUserByEmail = (email) =>
@@ -57,6 +59,11 @@ export const deleteSessionByToken = (sessionToken) =>
 export const deleteSessionsByUserId = (userId) =>
     prisma.session.deleteMany({
         where: { userId }
+    });
+
+export const getSessionByToken = (sessionToken) =>
+    prisma.session.findUnique({
+        where: { sessionToken }
     });
 
 export const deletePasswordResetTokensByUserId = (userId) =>
