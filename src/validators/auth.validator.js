@@ -62,3 +62,24 @@ export const requestPasswordResetSchema = z.object({
     params: z.object({}).optional(),
     query: z.object({}).optional()
 });
+
+export const confirmPasswordResetSchema = z.object({
+    body: z
+        .object({
+            token: z
+                .string()
+                .min(1, "Invalid or expired reset token. Please request a new password reset link."),
+            newPassword: z
+                .string()
+                .min(8, "Password must be at least 8 characters long."),
+            passwordConfirmation: z
+                .string()
+                .min(8, "Password must be at least 8 characters long.")
+        })
+        .refine((data) => data.newPassword === data.passwordConfirmation, {
+            message: "Passwords do not match. Please ensure both password fields are identical.",
+            path: ["passwordConfirmation"]
+        }),
+    params: z.object({}).optional(),
+    query: z.object({}).optional()
+});

@@ -9,7 +9,9 @@ import {
     deleteSessionByToken,
     deleteSessionsByUserId,
     deletePasswordResetTokensByUserId,
-    createPasswordResetToken
+    createPasswordResetToken,
+    getPasswordResetTokenRecord,
+    resetPasswordAndVerifyUser
 } from "../repositories/auth.repository.js";
 import { enqueueVerificationEmail, enqueuePasswordResetEmail } from "../queues/email.queue.js";
 
@@ -221,5 +223,40 @@ export const requestPasswordReset = async (email) => {
 
     return {
         message: "Password reset link has been sent to your email"
+    };
+};
+
+function failIfResetTokenInvalid(tokenRecord) {
+    if (!tokenRecord) {
+        const error = new Error("Invalid or expired reset token. Please request a new password reset link.");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const isExpired = tokenRecord.expiresAt && new Date(tokenRecord.expiresAt) < new Date();
+    const isUsed = tokenRecord.used;
+
+    if (isExpired || isUsed) {
+        const error = new Error("Invalid or expired reset token. Please request a new password reset link.");
+        error.statusCode = 400;
+        throw error;
+    }
+}
+
+export const confirmPasswordReset = async ({ token, newPassword, passwordConfirmation }) => {
+    if (newPassword !== passwordConfirmation) {
+        const error = new Error("Passwords do not match. Please ensure both password fields are identical.");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    const tokenRecord = await getPasswordResetTokenRecord(token);
+    failIfResetTokenInvalid(tokenRecord);
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await resetPasswordAndVerifyUser({ userId: tokenRecord.userId, passwordHash });
+
+    return {
+        message: "Password reset successful"
     };
 };

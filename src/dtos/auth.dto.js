@@ -15,3 +15,7 @@ export const toLoginResponseDto = (result) => ({
 export const toPasswordResetResponseDto = (result) => ({
     message: result.message
 });
+
+export const toConfirmPasswordResetResponseDto = (result) => ({
+    message: result.message
+});

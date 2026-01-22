@@ -72,3 +72,23 @@ export const createPasswordResetToken = ({ userId, token, expiresAt }) =>
             expiresAt
         }
     });
+
+export const getPasswordResetTokenRecord = (token) =>
+    prisma.passwordResetToken.findUnique({
+        where: { token }
+    });
+
+export const resetPasswordAndVerifyUser = ({ userId, passwordHash }) =>
+    prisma.$transaction(async (tx) => {
+        const user = await tx.user.update({
+            where: { id: userId },
+            data: { passwordHash, isVerified: true }
+        });
+
+        await tx.passwordResetToken.updateMany({
+            where: { userId },
+            data: { used: true }
+        });
+
+        return user;
+    });
