@@ -27,32 +27,6 @@ function passIfRequestedResourceIsPublic(req, next) {
     return false;
 }
 
-function failIfNoSessionTokenIsSent(sessionToken, next) {
-    if (!sessionToken) {
-        const error = new Error("Not authorized to take this action.");
-        error.statusCode = 401;
-        return next(error);
-    }
-}
-
-async function failIfSessionIsNotValid(session, next) {
-    if (!session) {
-        const error = new Error("Not authorized to take this action.");
-        error.statusCode = 401;
-        return next(error);
-    }
-}
-
-async function failIfSessionHasExpired(session, sessionToken, next) {
-    const isExpired = session.expiresAt && new Date(session.expiresAt) < new Date();
-    if (isExpired) {
-        await deleteSessionByToken(sessionToken);
-        const error = new Error("Not authorized to take this action.");
-        error.statusCode = 401;
-        return next(error);
-    }
-}
-
 export const requireAuth = async (req, res, next) => {
     if (passIfRequestMethodIsOptions(req, next)) return;
     if (passIfRequestedResourceIsPublic(req, next)) return;
@@ -60,12 +34,24 @@ export const requireAuth = async (req, res, next) => {
     const cookies = req.cookies ?? parseCookies(req.headers.cookie);
     const sessionToken = cookies?.session;
 
-    failIfNoSessionTokenIsSent(sessionToken, next);
-
+    if (!sessionToken) {
+        const error = new Error("Not authorized to take this action.");
+        error.statusCode = 401;
+        return next(error);
+    }
     const session = await getSessionByToken(sessionToken);
-    await failIfSessionIsNotValid(session, next);
-    await failIfSessionHasExpired(session, sessionToken, next);
-
+    if (!session) {
+        const error = new Error("Not authorized to take this action.");
+        error.statusCode = 401;
+        return next(error);
+    }
+    const isExpired = session.expiresAt && new Date(session.expiresAt) < new Date();
+    if (isExpired) {
+        await deleteSessionByToken(sessionToken);
+        const error = new Error("Not authorized to take this action.");
+        error.statusCode = 401;
+        return next(error);
+    }
     req.auth = {
         userId: session.userId,
         sessionToken
