@@ -21,3 +21,17 @@ export const sendVerificationEmail = async ({ to, pinCode }) => {
         html
     });
 };
+
+export const sendPasswordResetEmail = async ({ to, resetToken }) => {
+    const subject = "Reset your CyCup password";
+    const text = `Use this link to reset your password: ${env.frontend.url + '/password/reset/confirm?token=' + resetToken}\nIf you did not request a reset, you can ignore this email.`;
+    const html = `<p>Use this link  to reset your password: <strong>${env.frontend.url + '/password/reset/confirm?token=' + resetToken}</strong></p><p>If you did not request a reset, you can ignore this email.</p>`;
+
+    await transporter.sendMail({
+        from: env.mail.from,
+        to,
+        subject,
+        text,
+        html
+    });
+};

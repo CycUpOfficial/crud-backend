@@ -7,9 +7,11 @@ import {
     verifyUserAndSetPassword,
     createSession,
     deleteSessionByToken,
-    deleteSessionsByUserId
+    deleteSessionsByUserId,
+    deletePasswordResetTokensByUserId,
+    createPasswordResetToken
 } from "../repositories/auth.repository.js";
-import { enqueueVerificationEmail } from "../queues/email.queue.js";
+import { enqueueVerificationEmail, enqueuePasswordResetEmail } from "../queues/email.queue.js";
 
 const TRUSTED_UNIVERSITY_DOMAINS = [
     "abo.fi",
@@ -21,6 +23,8 @@ const PIN_EXPIRY_MINUTES = 15;
 const SESSION_EXPIRY_DAYS = 7;
 const SESSION_TOKEN_BYTES = 32;
 const SESSION_COOKIE_NAME = "session";
+const RESET_TOKEN_BYTES = 32;
+const RESET_TOKEN_EXPIRY_MINUTES = 60;
 
 const isUniversityEmail = (email) => {
     if (!email || !email.includes('@')) return false;
@@ -149,6 +153,9 @@ function failIfCredentialsInvalid() {
 const generateSessionToken = () =>
     crypto.randomBytes(SESSION_TOKEN_BYTES).toString("hex");
 
+const generateResetToken = () =>
+    crypto.randomBytes(RESET_TOKEN_BYTES).toString("hex");
+
 export const loginUser = async ({ email, password }) => {
     const user = await getUserByEmail(email);
     if (!user) {
@@ -189,4 +196,30 @@ export const loginUser = async ({ email, password }) => {
 export const logoutUser = async (sessionToken) => {
     if (!sessionToken) return;
     await deleteSessionByToken(sessionToken);
+};
+
+export const requestPasswordReset = async (email) => {
+    const user = await getUserByEmail(email);
+    if (!user) {
+        const error = new Error("Not found.");
+        error.statusCode = 404;
+        throw error;
+    }
+
+    await deletePasswordResetTokensByUserId(user.id);
+
+    const resetToken = generateResetToken();
+    const expiresAt = new Date(Date.now() + RESET_TOKEN_EXPIRY_MINUTES * 60 * 1000);
+
+    await createPasswordResetToken({
+        userId: user.id,
+        token: resetToken,
+        expiresAt
+    });
+
+    await enqueuePasswordResetEmail({ email, resetToken });
+
+    return {
+        message: "Password reset link has been sent to your email"
+    };
 };

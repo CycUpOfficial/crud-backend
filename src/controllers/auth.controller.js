@@ -1,5 +1,5 @@
-import { registerUser, verifyUser, loginUser, logoutUser } from "../services/auth.service.js";
-import { toRegisterResponseDto, toVerifyResponseDto, toLoginResponseDto } from "../dtos/auth.dto.js";
+import { registerUser, verifyUser, loginUser, logoutUser, requestPasswordReset } from "../services/auth.service.js";
+import { toRegisterResponseDto, toVerifyResponseDto, toLoginResponseDto, toPasswordResetResponseDto } from "../dtos/auth.dto.js";
 
 export const register = async (req, res) => {
     const { email } = req.validated.body;
@@ -54,4 +54,10 @@ export const logout = async (req, res) => {
     });
 
     res.status(200).end();
+};
+
+export const requestPasswordResetController = async (req, res) => {
+    const { email } = req.validated.body;
+    const result = await requestPasswordReset(email);
+    res.status(200).json(toPasswordResetResponseDto(result));
 };

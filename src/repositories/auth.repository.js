@@ -58,3 +58,17 @@ export const deleteSessionsByUserId = (userId) =>
     prisma.session.deleteMany({
         where: { userId }
     });
+
+export const deletePasswordResetTokensByUserId = (userId) =>
+    prisma.passwordResetToken.deleteMany({
+        where: { userId }
+    });
+
+export const createPasswordResetToken = ({ userId, token, expiresAt }) =>
+    prisma.passwordResetToken.create({
+        data: {
+            userId,
+            token,
+            expiresAt
+        }
+    });

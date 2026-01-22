@@ -52,3 +52,13 @@ export const logoutSchema = z.object({
     params: z.object({}).optional(),
     query: z.object({}).optional()
 });
+
+export const requestPasswordResetSchema = z.object({
+    body: z.object({
+        email: z
+            .string()
+            .email("Invalid email address.")
+    }),
+    params: z.object({}).optional(),
+    query: z.object({}).optional()
+});

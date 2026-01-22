@@ -16,3 +16,15 @@ export const enqueueVerificationEmail = async ({ email, pinCode }) =>
             removeOnFail: false
         }
     );
+
+export const enqueuePasswordResetEmail = async ({ email, resetToken }) =>
+    emailQueue.add(
+        "password-reset",
+        { email, resetToken },
+        {
+            attempts: 5,
+            backoff: { type: "exponential", delay: 5000 },
+            removeOnComplete: true,
+            removeOnFail: false
+        }
+    );

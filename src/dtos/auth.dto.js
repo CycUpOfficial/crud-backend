@@ -11,3 +11,7 @@ export const toVerifyResponseDto = (result) => ({
 export const toLoginResponseDto = (result) => ({
     userId: result.userId
 });
+
+export const toPasswordResetResponseDto = (result) => ({
+    message: result.message
+});
