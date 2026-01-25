@@ -4,6 +4,7 @@ import cors from "cors";
 import morgan from "morgan";
 import healthRoutes from "./routes/health.routes.js";
 import authRoutes from "./routes/auth.routes.js";
+import profileRoutes from "./routes/profile.routes.js";
 import { requireAuth } from "./middlewares/auth.middleware.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 
@@ -13,6 +14,7 @@ app.use(helmet());
 app.use(cors());
 app.use(morgan("dev"));
 app.use(express.json());
+app.use("/uploads", express.static("uploads"));
 
 const setupBullBoard = async () => {
 	if (process.env.NODE_ENV === "production") return;
@@ -38,6 +40,7 @@ void setupBullBoard();
 app.use("/api", requireAuth);
 app.use("/api", healthRoutes);
 app.use("/api", authRoutes);
+app.use("/api", profileRoutes);
 
 app.use(errorHandler);
 
