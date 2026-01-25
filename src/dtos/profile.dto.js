@@ -13,6 +13,7 @@ const buildProfileImageUrl = (req, profileImageUrl) => {
 export const toUserProfileDto = (user, req) => ({
     id: user.id,
     email: user.email,
+    isAdmin: user.isAdmin,
     firstName: user.firstName,
     familyName: user.familyName,
     address: user.address,
