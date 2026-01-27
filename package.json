@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "nodemon --legacy-watch --watch src --ext js,json src/server.js",
     "start": "node src/server.js",
+    "test": "jest",
     "worker:email": "node src/workers/email.worker.js"
   },
   "dependencies": {
@@ -27,7 +28,9 @@
   "devDependencies": {
     "@bull-board/api": "^6.5.3",
     "@bull-board/express": "^6.5.3",
+    "jest": "^29.7.0",
     "nodemon": "^3.1.7",
-    "prisma": "^6.1.0"
+    "prisma": "^6.1.0",
+    "supertest": "^6.3.3"
   }
 }
