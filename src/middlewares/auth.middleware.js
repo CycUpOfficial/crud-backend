@@ -7,7 +7,8 @@ const PUBLIC_PATHS = new Set([
     "/auth/verify",
     "/auth/login",
     "/auth/password/reset",
-    "/auth/password/reset/confirm"
+    "/auth/password/reset/confirm",
+    "/categories"
 ]);
 
 
