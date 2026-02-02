@@ -1,6 +1,7 @@
 import app from "./app.js";
 import { env } from "./config/env.js";
 import { seedCategories } from "./seeders/categories.seeder.js";
+import {login} from "./controllers/auth.controller.js";
 
 const startServer = async () => {
     try {
