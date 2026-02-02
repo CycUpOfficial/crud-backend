@@ -24,4 +24,22 @@ export const createItemSchema = z.object({
     params: z.object({}).optional(),
     query: z.object({}).optional()
 });
-//todo: update swagger for
+
+export const listItemsSchema = z.object({
+    body: z.object({}).optional(),
+    params: z.object({}).optional(),
+    query: z
+        .object({
+            search: z.string().trim().min(1).optional(),
+            city: z.string().trim().min(1).optional(),
+            itemType: z.enum(["selling", "giveaway", "lending"]).optional(),
+            condition: z.enum(["new", "used"]).optional(),
+            minPrice: z.preprocess(toNumber, z.number().nonnegative().optional()),
+            maxPrice: z.preprocess(toNumber, z.number().nonnegative().optional()),
+            sortBy: z.enum(["price", "date"]).optional(),
+            sortOrder: z.enum(["asc", "desc"]).optional(),
+            page: z.preprocess(toNumber, z.number().int().positive().optional()),
+            limit: z.preprocess(toNumber, z.number().int().positive().max(100).optional())
+        })
+        .optional()
+});

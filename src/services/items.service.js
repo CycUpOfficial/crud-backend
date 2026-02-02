@@ -1,4 +1,11 @@
-import { createItemWithPhotos, getCategoryById, getCityById, getUserForItemCreate } from "../repositories/items.repository.js";
+import {
+    createItemWithPhotos,
+    getCategoryById,
+    getCityById,
+    getUserForItemCreate,
+    listItems as listItemsRepository,
+    countItems
+} from "../repositories/items.repository.js";
 
 const normalizeText = (value) => value?.trim();
 
@@ -121,4 +128,116 @@ export const createItem = async ({
     };
 
     return createItemWithPhotos(data);
+};
+
+const buildPriceFilter = ({ itemType, minPrice, maxPrice }) => {
+    if (minPrice === undefined && maxPrice === undefined) return null;
+
+    const range = {};
+    if (minPrice !== undefined) range.gte = minPrice;
+    if (maxPrice !== undefined) range.lte = maxPrice;
+
+    if (itemType === "selling") {
+        return { sellingPrice: range };
+    }
+    if (itemType === "lending") {
+        return { lendingPrice: range };
+    }
+
+    if (itemType === "giveaway") {
+        return { __noResults: true };
+    }
+
+    return {
+        OR: [{ sellingPrice: range }, { lendingPrice: range }]
+    };
+};
+
+const buildOrderBy = ({ itemType, sortBy, sortOrder }) => {
+    const order = sortOrder ?? "desc";
+    if (sortBy === "price") {
+        if (itemType === "lending") return { lendingPrice: order };
+        if (itemType === "selling") return { sellingPrice: order };
+        return [{ sellingPrice: order }, { lendingPrice: order }, { createdAt: "desc" }];
+    }
+    return { createdAt: order };
+};
+
+export const listItems = async ({
+    search,
+    city,
+    itemType,
+    condition,
+    minPrice,
+    maxPrice,
+    sortBy,
+    sortOrder,
+    page = 1,
+    limit = 20
+} = {}) => {
+    const priceFilter = buildPriceFilter({ itemType, minPrice, maxPrice });
+    if (priceFilter?.__noResults) {
+        return {
+            items: [],
+            pagination: {
+                page,
+                limit,
+                total: 0,
+                totalPages: 0
+            }
+        };
+    }
+
+    const where = {
+        status: "published",
+        isDisabledByAdmin: false
+    };
+
+    if (search) {
+        where.OR = [
+            { title: { contains: search, mode: "insensitive" } },
+            { description: { contains: search, mode: "insensitive" } },
+            { brandName: { contains: search, mode: "insensitive" } }
+        ];
+    }
+
+    if (city) {
+        where.city = { name: { contains: city, mode: "insensitive" } };
+    }
+
+    if (itemType) {
+        where.itemType = itemType;
+    }
+
+    if (condition) {
+        where.condition = condition;
+    }
+
+    if (priceFilter) {
+        where.AND = [...(where.AND ?? []), priceFilter];
+    }
+
+    const safeLimit = Math.min(limit, 100);
+    const safePage = Math.max(page, 1);
+    const skip = (safePage - 1) * safeLimit;
+
+    const [items, total] = await Promise.all([
+        listItemsRepository({
+            where,
+            orderBy: buildOrderBy({ itemType, sortBy, sortOrder }),
+            skip,
+            take: safeLimit
+        }),
+        countItems(where)
+    ]);
+
+    return {
+        items,
+        pagination: {
+            page: safePage,
+            limit: safeLimit,
+            total,
+            totalPages: total ? Math.ceil(total / safeLimit) : 0
+        }
+    };
 };

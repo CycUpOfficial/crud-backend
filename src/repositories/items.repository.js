@@ -31,3 +31,26 @@ export const createItemWithPhotos = (data) =>
             photos: { select: { id: true, photoUrl: true, isMain: true, displayOrder: true } }
         }
     });
+
+export const listItems = ({ where, orderBy, skip, take }) =>
+    prisma.item.findMany({
+        where,
+        orderBy,
+        skip,
+        take,
+        select: {
+            id: true,
+            title: true,
+            itemType: true,
+            sellingPrice: true,
+            lendingPrice: true,
+            photos: {
+                where: { isMain: true },
+                take: 1,
+                select: { photoUrl: true, isMain: true }
+            }
+        }
+    });
+
+export const countItems = (where) =>
+    prisma.item.count({ where });

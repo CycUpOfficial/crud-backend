@@ -1,7 +1,7 @@
 import { parseMultipleFiles, saveImages } from "../storage/storage.service.js";
 import { createItemSchema } from "../validators/items.validator.js";
-import { createItem as createItemService } from "../services/items.service.js";
-import { toItemResponseDto } from "../dtos/items.dto.js";
+import { createItem as createItemService, listItems as listItemsService } from "../services/items.service.js";
+import { toItemResponseDto, toItemsListResponseDto } from "../dtos/items.dto.js";
 
 const ensurePhotosValid = ({ files, mainPhotoIndex }) => {
     if (!files || files.length === 0) {
@@ -89,4 +89,34 @@ export const createItem = async (req, res) => {
     });
 
     res.status(201).json(toItemResponseDto(item, req));
+};
+
+export const listItems = async (req, res) => {
+    const {
+        search,
+        city,
+        itemType,
+        condition,
+        minPrice,
+        maxPrice,
+        sortBy,
+        sortOrder,
+        page,
+        limit
+    } = req.validated?.query ?? {};
+
+    const response = await listItemsService({
+        search,
+        city,
+        itemType,
+        condition,
+        minPrice,
+        maxPrice,
+        sortBy,
+        sortOrder,
+        page,
+        limit
+    });
+
+    res.status(200).json(toItemsListResponseDto(response, req));
 };

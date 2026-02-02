@@ -33,3 +33,17 @@ export const toItemResponseDto = (item, req) => ({
     createdAt: item.createdAt,
     updatedAt: item.updatedAt
 });
+
+export const toItemSummaryDto = (item, req) => ({
+    id: item.id,
+    title: item.title,
+    mainImage: buildFileUrl(req, item.photos?.[0]?.photoUrl ?? null),
+    sellingPrice: item.sellingPrice,
+    lendingPrice: item.lendingPrice,
+    itemType: item.itemType
+});
+
+export const toItemsListResponseDto = ({ items, pagination }, req) => ({
+    items: items.map((item) => toItemSummaryDto(item, req)),
+    pagination
+});

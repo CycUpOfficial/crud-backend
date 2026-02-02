@@ -12,6 +12,10 @@ const PUBLIC_PATHS = new Set([
     "/cities"
 ]);
 
+const PUBLIC_METHOD_ROUTES = new Set([
+    "GET /items"
+]);
+
 
 function passIfRequestMethodIsOptions(req, next) {
     if (req.method === "OPTIONS") {
@@ -22,6 +26,10 @@ function passIfRequestMethodIsOptions(req, next) {
 }
 
 function passIfRequestedResourceIsPublic(req, next) {
+    if (PUBLIC_METHOD_ROUTES.has(`${req.method} ${req.path}`)) {
+        next();
+        return true;
+    }
     if (PUBLIC_PATHS.has(req.path)) {
         next();
         return true;
