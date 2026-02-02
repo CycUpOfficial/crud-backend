@@ -1,8 +1,8 @@
-import { prisma } from "../db/index.js";
+import {prisma} from "../db/index.js";
 
 export const getUserForItemCreate = (userId) =>
     prisma.user.findUnique({
-        where: { id: userId },
+        where: {id: userId},
         select: {
             id: true,
             isVerified: true,
@@ -12,27 +12,27 @@ export const getUserForItemCreate = (userId) =>
 
 export const getCategoryById = (categoryId) =>
     prisma.category.findUnique({
-        where: { id: categoryId },
-        select: { id: true, name: true }
+        where: {id: categoryId},
+        select: {id: true, name: true}
     });
 
 export const getCityById = (cityId) =>
     prisma.city.findUnique({
-        where: { id: cityId },
-        select: { id: true, name: true }
+        where: {id: cityId},
+        select: {id: true, name: true}
     });
 
 export const createItemWithPhotos = (data) =>
     prisma.item.create({
         data,
         include: {
-            category: { select: { id: true, name: true } },
-            city: { select: { id: true, name: true } },
-            photos: { select: { id: true, photoUrl: true, isMain: true, displayOrder: true } }
+            category: {select: {id: true, name: true}},
+            city: {select: {id: true, name: true}},
+            photos: {select: {id: true, photoUrl: true, isMain: true, displayOrder: true}}
         }
     });
 
-export const listItems = ({ where, orderBy, skip, take }) =>
+export const listItems = ({where, orderBy, skip, take}) =>
     prisma.item.findMany({
         where,
         orderBy,
@@ -44,13 +44,15 @@ export const listItems = ({ where, orderBy, skip, take }) =>
             itemType: true,
             sellingPrice: true,
             lendingPrice: true,
+            rentUnit: true,
+            city: {select: {name: true}},
             photos: {
-                where: { isMain: true },
+                where: {isMain: true},
                 take: 1,
-                select: { photoUrl: true, isMain: true }
+                select: {photoUrl: true, isMain: true}
             }
         }
     });
 
 export const countItems = (where) =>
-    prisma.item.count({ where });
+    prisma.item.count({where});

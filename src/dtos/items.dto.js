@@ -40,6 +40,8 @@ export const toItemSummaryDto = (item, req) => ({
     mainImage: buildFileUrl(req, item.photos?.[0]?.photoUrl ?? null),
     sellingPrice: item.sellingPrice,
     lendingPrice: item.lendingPrice,
+    lendingUnit: item.rentUnit,
+    city: item.city?.name,
     itemType: item.itemType
 });
 
