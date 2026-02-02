@@ -8,6 +8,8 @@ import profileRoutes from "./routes/profile.routes.js";
 import categoriesRoutes from "./routes/categories.routes.js";
 import citiesRoutes from "./routes/cities.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
+import ratingsRoutes from "./routes/ratings.routes.js";
 import { requireAuth } from "./middlewares/auth.middleware.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 
@@ -47,6 +49,8 @@ app.use("/api", authRoutes);
 app.use("/api", profileRoutes);
 app.use("/api", categoriesRoutes);
 app.use("/api", citiesRoutes);
+app.use("/api", adminRoutes);
+app.use("/api/items/:itemId/ratings", ratingsRoutes);
 
 app.use(errorHandler);
 
