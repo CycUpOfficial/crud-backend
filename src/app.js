@@ -7,6 +7,7 @@ import authRoutes from "./routes/auth.routes.js";
 import profileRoutes from "./routes/profile.routes.js";
 import categoriesRoutes from "./routes/categories.routes.js";
 import citiesRoutes from "./routes/cities.routes.js";
+import dashboardRoutes from "./routes/dashboard.routes.js";
 import { requireAuth } from "./middlewares/auth.middleware.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 
@@ -40,6 +41,7 @@ const setupBullBoard = async () => {
 void setupBullBoard();
 
 app.use("/api", requireAuth);
+app.use("/api", dashboardRoutes);
 app.use("/api", healthRoutes);
 app.use("/api", authRoutes);
 app.use("/api", profileRoutes);
