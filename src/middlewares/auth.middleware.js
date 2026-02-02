@@ -9,15 +9,6 @@ const PUBLIC_PATHS = new Set([
     "/auth/password/reset",
     "/auth/password/reset/confirm"
 ]);
-// Testing Function
-function passIfDashboardDev(req, next) {
-    if (process.env.NODE_ENV === "development" && req.path.startsWith("/dashboard")) {
-        req.auth = { userId: "dev-user-id" };
-        next();
-        return true;
-    }
-    return false;
-}
 
 function passIfRequestMethodIsOptions(req, next) {
     if (req.method === "OPTIONS") {
