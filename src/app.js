@@ -50,4 +50,6 @@ app.use("/api", citiesRoutes);
 
 app.use(errorHandler);
 
+
+
 export default app;
