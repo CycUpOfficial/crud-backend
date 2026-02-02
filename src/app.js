@@ -7,6 +7,7 @@ import authRoutes from "./routes/auth.routes.js";
 import profileRoutes from "./routes/profile.routes.js";
 import categoriesRoutes from "./routes/categories.routes.js";
 import citiesRoutes from "./routes/cities.routes.js";
+import itemsRoutes from "./routes/items.routes.js";
 import { requireAuth } from "./middlewares/auth.middleware.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 
@@ -45,6 +46,7 @@ app.use("/api", authRoutes);
 app.use("/api", profileRoutes);
 app.use("/api", categoriesRoutes);
 app.use("/api", citiesRoutes);
+app.use("/api", itemsRoutes);
 
 app.use(errorHandler);
 

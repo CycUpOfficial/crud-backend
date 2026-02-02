@@ -43,6 +43,23 @@ export const parseSingleFile = ({ req, res, fieldName, allowedMimeTypes, maxFile
         });
     });
 
+export const parseMultipleFiles = ({ req, res, fieldName, maxFiles, allowedMimeTypes, maxFileSize }) =>
+    new Promise((resolve, reject) => {
+        const uploader = createMemoryUploader({ allowedMimeTypes, maxFileSize });
+        uploader.array(fieldName, maxFiles)(req, res, (err) => {
+            if (err) {
+                const error = new Error(err.message || "Invalid file upload.");
+                error.statusCode = 400;
+                return reject(error);
+            }
+
+            return resolve({
+                body: req.body ?? {},
+                files: req.files ?? []
+            });
+        });
+    });
+
 export const saveFile = async ({ file, folder }) => {
     if (!file) return null;
 
@@ -53,4 +70,10 @@ export const saveFile = async ({ file, folder }) => {
     });
 };
 
+export const saveFiles = async ({ files, folder }) => {
+    if (!files || files.length === 0) return [];
+    return Promise.all(files.map((file) => saveFile({ file, folder })));
+};
+
 export const saveImage = async ({ file, folder }) => saveFile({ file, folder });
+export const saveImages = async ({ files, folder }) => saveFiles({ files, folder });
