@@ -9,13 +9,9 @@ const PUBLIC_PATHS = new Set([
     "/auth/password/reset",
     "/auth/password/reset/confirm",
     "/categories",
-    "/cities"
+    "/cities",
+    "/items",
 ]);
-
-const PUBLIC_METHOD_ROUTES = new Set([
-    "GET /items"
-]);
-
 
 function passIfRequestMethodIsOptions(req, next) {
     if (req.method === "OPTIONS") {
@@ -26,10 +22,6 @@ function passIfRequestMethodIsOptions(req, next) {
 }
 
 function passIfRequestedResourceIsPublic(req, next) {
-    if (PUBLIC_METHOD_ROUTES.has(`${req.method} ${req.path}`)) {
-        next();
-        return true;
-    }
     if (PUBLIC_PATHS.has(req.path)) {
         next();
         return true;
