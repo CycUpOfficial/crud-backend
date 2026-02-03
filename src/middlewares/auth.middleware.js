@@ -9,7 +9,8 @@ const PUBLIC_PATHS = new Set([
     "/auth/password/reset",
     "/auth/password/reset/confirm",
     "/categories",
-    "/cities"
+    "/cities",
+    "/items",
 ]);
 
 function passIfRequestMethodIsOptions(req, next) {
