@@ -49,3 +49,15 @@ export const toItemsListResponseDto = ({ items, pagination }, req) => ({
     items: items.map((item) => toItemSummaryDto(item, req)),
     pagination
 });
+
+export const toItemDetailResponseDto = (item, req) => ({
+    ...toItemResponseDto(item, req),
+    owner: item.owner
+        ? {
+            id: item.owner.id,
+            firstName: item.owner.firstName,
+            familyName: item.owner.familyName,
+            email: item.owner.email
+        }
+        : null
+});

@@ -126,10 +126,6 @@ export const unblockUserById = async (userId) => {
     });
 };
 
-export const findUserById = async (userId) => {
-    return prisma.user.findUnique({ where: { id: userId } });
-};
-
 export const createAdminReport = async ({ reporterId, reportedUserId, description }) => {
     return prisma.report.create({
         data: {

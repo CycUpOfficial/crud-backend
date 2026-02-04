@@ -10,7 +10,10 @@ const PUBLIC_PATHS = new Set([
     "/auth/password/reset/confirm",
     "/categories",
     "/cities",
-    "/items",
+]);
+
+const PUBLIC_METHOD_ROUTES = new Set([
+    "GET /items"
 ]);
 
 function passIfRequestMethodIsOptions(req, next) {
@@ -22,6 +25,10 @@ function passIfRequestMethodIsOptions(req, next) {
 }
 
 function passIfRequestedResourceIsPublic(req, next) {
+    if (PUBLIC_METHOD_ROUTES.has(`${req.method} ${req.path}`)) {
+        next();
+        return true;
+    }
     if (PUBLIC_PATHS.has(req.path)) {
         next();
         return true;
@@ -54,6 +61,7 @@ export const requireAuth = async (req, res, next) => {
         error.statusCode = 401;
         return next(error);
     }
+    console.log('moz');
     req.auth = {
         userId: session.userId,
         sessionToken
