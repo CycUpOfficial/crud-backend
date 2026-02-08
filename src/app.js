@@ -11,6 +11,7 @@ import itemsRoutes from "./routes/items.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import ratingsRoutes from "./routes/ratings.routes.js";
+import savedSearchRoutes from "./routes/saved-search.routes.js";
 import { requireAuth } from "./middlewares/auth.middleware.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 
@@ -53,6 +54,7 @@ app.use("/api", citiesRoutes);
 app.use("/api", itemsRoutes);
 app.use("/api", adminRoutes);
 app.use("/api/items/:itemId/ratings", ratingsRoutes);
+app.use("/api", savedSearchRoutes);
 
 app.use(errorHandler);
 
