@@ -1,4 +1,4 @@
-import { getItemById } from "../repositories/items.repository.js";
+import { prisma } from "../db/index.js";
 import { createRating } from "../repositories/ratings.repository.js";
 
 export const submitRatingService = async ({
@@ -7,7 +7,14 @@ export const submitRatingService = async ({
                                               rating,
                                               comment
                                           }) => {
-    const item = await getItemById(itemId);
+    const item = await prisma.item.findUnique({
+        where: { id: itemId },
+        select: {
+            id: true,
+            ownerId: true,
+            buyerId: true
+        }
+    });
 
     if (!item) {
         const err = new Error("Item ID not found!");
@@ -22,7 +29,7 @@ export const submitRatingService = async ({
         throw err;
     }
 
-    // Only buyer can rate seller (purchase/rent relationship)
+    // Only buyer can rate seller
     const isBuyer = item.buyerId && item.buyerId === raterId;
     if (!isBuyer) {
         const err = new Error("Invalid input or not authorized to rate");
@@ -39,7 +46,8 @@ export const submitRatingService = async ({
             comment
         });
 
-        const raterName = `${created.rater?.firstName ?? ""} ${created.rater?.familyName ?? ""}`.trim();
+        const raterName =
+            `${created.rater?.firstName ?? ""} ${created.rater?.familyName ?? ""}`.trim();
 
         return {
             id: created.id,
@@ -51,7 +59,6 @@ export const submitRatingService = async ({
             createdAt: created.createdAt
         };
     } catch (err) {
-        // Unique constraint: one rating per item per rater
         if (err.code === "P2002") {
             const e = new Error("Invalid input or not authorized to rate");
             e.statusCode = 400;
