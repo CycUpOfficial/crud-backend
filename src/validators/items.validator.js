@@ -25,6 +25,35 @@ export const createItemSchema = z.object({
     query: z.object({}).optional()
 });
 
+export const updateItemSchema = z.object({
+    body: z.object({
+        title: z.string().trim().min(1).max(100).optional(),
+        categoryId: z.string().uuid().optional(),
+        brandName: z.string().trim().min(1).optional(),
+        condition: z.enum(["new", "used"]).optional(),
+        description: z.string().trim().min(1).max(1000).optional(),
+        address: z.string().trim().min(1).optional(),
+        cityId: z.string().uuid().optional(),
+        itemType: z.enum(["selling", "giveaway", "lending"]).optional(),
+        sellingPrice: z.preprocess(toNumber, z.number().positive().optional()),
+        lendingPrice: z.preprocess(toNumber, z.number().positive().optional()),
+        rentUnit: z.enum(["hour", "day", "week", "month"]).optional(),
+        mainPhotoIndex: z.preprocess(toNumber, z.number().int().nonnegative().optional())
+    }),
+    params: z.object({
+        itemId: z.string().min(1, "Item ID not found!")
+    }),
+    query: z.object({}).optional()
+});
+
+export const itemIdSchema = z.object({
+    body: z.object({}).optional(),
+    params: z.object({
+        itemId: z.string().min(1, "Item ID not found!")
+    }),
+    query: z.object({}).optional()
+});
+
 export const listItemsSchema = z.object({
     body: z.object({}).optional(),
     params: z.object({}).optional(),
@@ -42,4 +71,14 @@ export const listItemsSchema = z.object({
             limit: z.preprocess(toNumber, z.number().int().positive().max(100).optional())
         })
         .optional()
+});
+
+export const markItemSoldSchema = z.object({
+    body: z.object({
+        buyerEmail: z.string().trim().email("Invalid buyer email format. Please provide a valid email address.")
+    }),
+    params: z.object({
+        itemId: z.string().min(1, "Item ID not found!")
+    }),
+    query: z.object({}).optional()
 });
