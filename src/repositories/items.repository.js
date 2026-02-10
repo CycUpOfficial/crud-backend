@@ -103,6 +103,19 @@ export const getItemWithDetails = (itemId) =>
         }
     });
 
+export const listRelatedItemIds = ({itemId, categoryId, limit = 10}) =>
+    prisma.item.findMany({
+        where: {
+            id: {not: itemId},
+            categoryId,
+            status: "published",
+            isDisabledByAdmin: false
+        },
+        orderBy: {createdAt: "desc"},
+        take: limit,
+        select: {id: true}
+    });
+
 export const updateItemById = (itemId, data) =>
     prisma.item.update({
         where: {id: itemId},
