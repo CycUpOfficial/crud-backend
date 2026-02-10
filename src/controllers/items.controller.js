@@ -1,5 +1,5 @@
-import { parseMultipleFiles, saveImages } from "../storage/storage.service.js";
-import { createItemSchema, updateItemSchema } from "../validators/items.validator.js";
+import {parseMultipleFiles, saveImages} from "../storage/storage.service.js";
+import {createItemSchema, updateItemSchema} from "../validators/items.validator.js";
 import {
     createItem as createItemService,
     listItems as listItemsService,
@@ -8,9 +8,9 @@ import {
     deleteItem as deleteItemService,
     markItemAsSold as markItemAsSoldService
 } from "../services/items.service.js";
-import { toItemDetailResponseDto, toItemResponseDto, toItemsListResponseDto } from "../dtos/items.dto.js";
+import {toItemDetailResponseDto, toItemResponseDto, toItemsListResponseDto} from "../dtos/items.dto.js";
 
-const ensurePhotosValid = ({ files, mainPhotoIndex }) => {
+const ensurePhotosValid = ({files, mainPhotoIndex}) => {
     if (!files || files.length === 0) {
         const error = new Error("At least one photo is required.");
         error.statusCode = 400;
@@ -30,7 +30,7 @@ const ensurePhotosValid = ({ files, mainPhotoIndex }) => {
     }
 };
 
-const ensureUpdatePhotosValid = ({ files, mainPhotoIndex }) => {
+const ensureUpdatePhotosValid = ({files, mainPhotoIndex}) => {
     if (files?.length) {
         if (mainPhotoIndex === undefined || mainPhotoIndex === null) {
             const error = new Error("mainPhotoIndex is required when photos are provided.");
@@ -50,8 +50,19 @@ const ensureUpdatePhotosValid = ({ files, mainPhotoIndex }) => {
     }
 };
 
+function failIfResultIsNotSuccessful(result) {
+    if (!result.success) {
+        const firstIssue = result.error.issues?.[0];
+        const message = firstIssue?.message ?? "Validation error";
+        const error = new Error(message);
+        error.statusCode = 400;
+        error.details = result.error.flatten();
+        throw error;
+    }
+}
+
 export const createItem = async (req, res) => {
-    const { body, files } = await parseMultipleFiles({
+    const {body, files} = await parseMultipleFiles({
         req,
         res,
         fieldName: "photos",
@@ -65,15 +76,7 @@ export const createItem = async (req, res) => {
         params: req.params,
         query: req.query
     });
-
-    if (!result.success) {
-        const firstIssue = result.error.issues?.[0];
-        const message = firstIssue?.message ?? "Validation error";
-        const error = new Error(message);
-        error.statusCode = 400;
-        error.details = result.error.flatten();
-        throw error;
-    }
+    failIfResultIsNotSuccessful(result)
 
     const {
         title,
@@ -170,14 +173,14 @@ export const listItems = async (req, res) => {
 };
 
 export const getItemById = async (req, res) => {
-    const { itemId } = req.validated?.params ?? {};
-    const item = await getItemDetailsService({ itemId });
+    const {itemId} = req.validated?.params ?? {};
+    const item = await getItemDetailsService({itemId});
 
     res.status(200).json(toItemDetailResponseDto(item, req));
 };
 
 export const updateItem = async (req, res) => {
-    const { body, files } = await parseMultipleFiles({
+    const {body, files} = await parseMultipleFiles({
         req,
         res,
         fieldName: "photos",
@@ -192,14 +195,7 @@ export const updateItem = async (req, res) => {
         query: req.query
     });
 
-    if (!result.success) {
-        const firstIssue = result.error.issues?.[0];
-        const message = firstIssue?.message ?? "Validation error";
-        const error = new Error(message);
-        error.statusCode = 400;
-        error.details = result.error.flatten();
-        throw error;
-    }
+    failIfResultIsNotSuccessful(result);
 
     const {
         title,
@@ -216,10 +212,10 @@ export const updateItem = async (req, res) => {
         mainPhotoIndex
     } = result.data.body;
 
-    ensureUpdatePhotosValid({ files, mainPhotoIndex });
+    ensureUpdatePhotosValid({files, mainPhotoIndex});
 
     const uploadedPhotos = files?.length
-        ? await saveImages({ files, folder: "item-images" })
+        ? await saveImages({files, folder: "item-images"})
         : [];
 
     const photos = uploadedPhotos.map((photo, index) => ({
@@ -249,15 +245,15 @@ export const updateItem = async (req, res) => {
 };
 
 export const deleteItem = async (req, res) => {
-    const { itemId } = req.validated?.params ?? {};
-    await deleteItemService({ itemId, userId: req.auth.userId });
+    const {itemId} = req.validated?.params ?? {};
+    await deleteItemService({itemId, userId: req.auth.userId});
 
-    res.status(200).json({ message: "Item deleted successfully" });
+    res.status(200).json({message: "Item deleted successfully"});
 };
 
 export const markItemAsSold = async (req, res) => {
-    const { buyerEmail } = req.validated?.body ?? {};
-    const { itemId } = req.validated?.params ?? {};
+    const {buyerEmail} = req.validated?.body ?? {};
+    const {itemId} = req.validated?.params ?? {};
 
     const item = await markItemAsSoldService({
         itemId,

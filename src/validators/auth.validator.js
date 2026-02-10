@@ -3,7 +3,6 @@ import { z } from "zod";
 export const registerSchema = z.object({
     body: z.object({
         email: z
-            .string()
             .email("Invalid email format. Please provide a valid email address.")
     }),
     params: z.object({}).optional(),
@@ -14,7 +13,6 @@ export const verifySchema = z.object({
     body: z
         .object({
             email: z
-                .string()
                 .email("Invalid email address."),
             pinCode: z
                 .string()
@@ -37,7 +35,6 @@ export const verifySchema = z.object({
 export const loginSchema = z.object({
     body: z.object({
         email: z
-            .string()
             .email("Invalid email address."),
         password: z
             .string()
@@ -56,7 +53,6 @@ export const logoutSchema = z.object({
 export const requestPasswordResetSchema = z.object({
     body: z.object({
         email: z
-            .string()
             .email("Invalid email address.")
     }),
     params: z.object({}).optional(),

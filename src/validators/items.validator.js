@@ -9,12 +9,12 @@ const toNumber = (value) => {
 export const createItemSchema = z.object({
     body: z.object({
         title: z.string().trim().min(1).max(100),
-        categoryId: z.string().uuid(),
+        categoryId: z.uuid(),
         brandName: z.string().trim().min(1).optional(),
         condition: z.enum(["new", "used"]),
         description: z.string().trim().min(1).max(1000),
         address: z.string().trim().min(1),
-        cityId: z.string().uuid(),
+        cityId: z.uuid(),
         itemType: z.enum(["selling", "giveaway", "lending"]),
         sellingPrice: z.preprocess(toNumber, z.number().positive().optional()),
         lendingPrice: z.preprocess(toNumber, z.number().positive().optional()),
@@ -28,12 +28,12 @@ export const createItemSchema = z.object({
 export const updateItemSchema = z.object({
     body: z.object({
         title: z.string().trim().min(1).max(100).optional(),
-        categoryId: z.string().uuid().optional(),
+        categoryId: z.uuid().optional(),
         brandName: z.string().trim().min(1).optional(),
         condition: z.enum(["new", "used"]).optional(),
         description: z.string().trim().min(1).max(1000).optional(),
         address: z.string().trim().min(1).optional(),
-        cityId: z.string().uuid().optional(),
+        cityId: z.uuid().optional(),
         itemType: z.enum(["selling", "giveaway", "lending"]).optional(),
         sellingPrice: z.preprocess(toNumber, z.number().positive().optional()),
         lendingPrice: z.preprocess(toNumber, z.number().positive().optional()),
@@ -75,7 +75,7 @@ export const listItemsSchema = z.object({
 
 export const markItemSoldSchema = z.object({
     body: z.object({
-        buyerEmail: z.string().trim().email("Invalid buyer email format. Please provide a valid email address.")
+        buyerEmail: z.email("Invalid buyer email format. Please provide a valid email address.")
     }),
     params: z.object({
         itemId: z.string().min(1, "Item ID not found!")
