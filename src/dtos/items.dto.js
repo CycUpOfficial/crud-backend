@@ -55,6 +55,7 @@ export const toItemDetailResponseDto = (item, req) => ({
     owner: item.owner
         ? {
             id: item.owner.id,
+            username: item.owner.username,
             firstName: item.owner.firstName,
             familyName: item.owner.familyName,
             email: item.owner.email

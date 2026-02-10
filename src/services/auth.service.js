@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import {
     getUserByEmail,
+    getUserByUsername,
     createUserWithVerificationPin,
     getVerificationPinByUserId,
     verifyUserAndSetPassword,
@@ -28,6 +29,8 @@ const SESSION_COOKIE_NAME = "session";
 const RESET_TOKEN_BYTES = 32;
 const RESET_TOKEN_EXPIRY_MINUTES = 60;
 
+const normalizeUsername = (value) => value?.trim();
+
 const isUniversityEmail = (email) => {
     if (!email || !email.includes('@')) return false;
     const domain = email.split('@')[1].toLowerCase();
@@ -53,6 +56,15 @@ async function failIfUserAlreadyExists(email) {
     const existingUser = await getUserByEmail(email);
     if (existingUser) {
         const error = new Error("A user with this email already exists.");
+        error.statusCode = 400;
+        throw error;
+    }
+}
+
+async function failIfUsernameAlreadyExists(username) {
+    const existingUser = await getUserByUsername(username);
+    if (existingUser) {
+        const error = new Error("A user with this username already exists.");
         error.statusCode = 400;
         throw error;
     }
@@ -121,16 +133,19 @@ function failIfPinInvalid(pinRecord, pinCode) {
     }
 }
 
-export const verifyUser = async ({ email, pinCode, password, passwordConfirmation }) => {
+export const verifyUser = async ({ email, pinCode, username, password, passwordConfirmation }) => {
     failIfPasswordsDoNotMatch(password, passwordConfirmation);
 
     const user = await failIfUserNotFound(email);
     const pinRecord = await getVerificationPinByUserId(user.id);
 
+    const normalizedUsername = normalizeUsername(username);
+    await failIfUsernameAlreadyExists(normalizedUsername);
+
     failIfPinInvalid(pinRecord, pinCode);
 
     const passwordHash = await bcrypt.hash(password, 12);
-    await verifyUserAndSetPassword(user.id, passwordHash);
+    await verifyUserAndSetPassword(user.id, passwordHash, normalizedUsername);
 
     return {
         message: "Email verified successfully",
