@@ -2,7 +2,6 @@ node_modules
 .env
 .idea
 .idea/*
-/cycup.yml
 /uploads
 /uploads/*
 /logs
