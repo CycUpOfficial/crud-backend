@@ -2,6 +2,7 @@ import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 import morgan from "morgan";
+import { env } from "./config/env.js";
 import healthRoutes from "./routes/health.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import profileRoutes from "./routes/profile.routes.js";
@@ -16,11 +17,32 @@ import { errorHandler } from "./middlewares/error.middleware.js";
 
 const app = express();
 
+const allowedOrigins = new Set([env.frontend.url]);
+const corsOptions = {
+	origin: (origin, callback) => {
+		if (!origin) {
+			callback(null, true);
+			return;
+		}
+		if (allowedOrigins.has(origin)) {
+			callback(null, true);
+			return;
+		}
+		callback(new Error(`CORS blocked for origin: ${origin}`));
+	},
+	credentials: true,
+	methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+	allowedHeaders: ["Content-Type", "Authorization"]
+};
+
 app.use(helmet());
-app.use(cors());
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 app.use(morgan("dev"));
 app.use(express.json());
-app.use("/uploads", express.static("uploads"));
+if (env.storage.driver === "local") {
+	app.use("/uploads", express.static("uploads"));
+}
 
 const setupBullBoard = async () => {
 	if (process.env.NODE_ENV === "production") return;
