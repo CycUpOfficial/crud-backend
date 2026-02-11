@@ -5,6 +5,7 @@ import {
     getUserForItemCreate,
     getItemById,
     getItemWithDetails,
+    listRelatedItemIds,
     listItems as listItemsRepository,
     countItems,
     updateItemById,
@@ -290,7 +291,15 @@ export const getItemDetails = async ({ itemId }) => {
     if (!item || item.status !== "published" || item.isDisabledByAdmin) {
         failIfItemNotFound();
     }
-    return item;
+    const relatedItems = await listRelatedItemIds({
+        itemId,
+        categoryId: item.categoryId
+    });
+
+    return {
+        ...item,
+        relatedItemIds: relatedItems.map((related) => related.id)
+    };
 };
 
 export const updateItem = async ({

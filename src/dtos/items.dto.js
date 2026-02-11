@@ -52,6 +52,7 @@ export const toItemsListResponseDto = ({ items, pagination }, req) => ({
 
 export const toItemDetailResponseDto = (item, req) => ({
     ...toItemResponseDto(item, req),
+    relatedItemIds: item.relatedItemIds ?? [],
     owner: item.owner
         ? {
             id: item.owner.id,
