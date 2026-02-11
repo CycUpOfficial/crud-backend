@@ -103,6 +103,28 @@ export const getItemWithDetails = (itemId) =>
         }
     });
 
+export const getItemForChat = (itemId) =>
+    prisma.item.findUnique({
+        where: {id: itemId},
+        select: {
+            id: true,
+            title: true,
+            itemType: true,
+            sellingPrice: true,
+            lendingPrice: true,
+            rentUnit: true,
+            status: true,
+            isDisabledByAdmin: true,
+            ownerId: true,
+            city: {select: {name: true}},
+            photos: {
+                where: {isMain: true},
+                take: 1,
+                select: {photoUrl: true, isMain: true}
+            }
+        }
+    });
+
 export const updateItemById = (itemId, data) =>
     prisma.item.update({
         where: {id: itemId},

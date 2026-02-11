@@ -17,6 +17,9 @@ export const env = {
         port: Number(process.env.REDIS_PORT ?? 6379),
         password: process.env.REDIS_PASSWORD ?? undefined
     },
+    mongo: {
+        uri: process.env.MONGO_URI ?? "mongodb://localhost:27017/cycup"
+    },
     mail: {
         host: process.env.SMTP_HOST ?? "smtp.example.com",
         port: Number(process.env.SMTP_PORT ?? 587),
