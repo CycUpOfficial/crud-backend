@@ -5,16 +5,15 @@ import { prisma } from "../db/index.js";
 export const getUserByEmail = (email) =>
     prisma.user.findUnique({ where: { email } });
 
-export const getUserById = (userId) =>
+export const getUserById = (id) =>
     prisma.user.findUnique({
-        where: { id: userId },
-        select: { id: true, email: true, username: true }
-    });
-
-export const getUserByUsername = (username) =>
-    prisma.user.findFirst({
-        where: {
-            username: { equals: username, mode: "insensitive" }
+        where: { id },
+        select: {
+            id: true,
+            email: true,
+            username: true,
+            isVerified: true,
+            isBlocked: true
         }
     });
 
