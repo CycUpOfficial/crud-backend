@@ -5,3 +5,5 @@ node_modules
 /cycup.yml
 /uploads
 /uploads/*
+/logs
+/logs/*
