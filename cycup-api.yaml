@@ -26,6 +26,8 @@ tags:
     description: User rating and review system
   - name: Notifications
     description: Notification and saved search management
+  - name: Chat
+    description: Real-time chat over Socket.IO
   - name: Admin
     description: Administrative functions
 
@@ -411,6 +413,33 @@ paths:
                   summary: Password Too Short
                   value:
                     message: "Password must be at least 8 characters long."
+
+  # ============================================
+  # Chat (Socket.IO) Endpoints
+  # ============================================
+  /socket.io:
+    get:
+      tags:
+        - Chat
+      summary: Socket.IO connection
+      description: |
+        Real-time chat uses Socket.IO over the existing session cookie.
+        The client must send the session cookie during the Socket.IO handshake.
+
+        Client events:
+        - chat:start { itemId, otherUserId }
+        - chat:list { page, limit }
+        - chat:messages { chatId, limit, before }
+        - message:send { chatId, text, file }
+
+        Server events:
+        - chat:started (chat)
+        - message:new (message)
+
+        All events respond with an ack: { ok: true, ... } or { ok: false, error }.
+      responses:
+        '101':
+          description: Switching Protocols (WebSocket upgrade)
 
   # ============================================
   # User Profile Endpoints

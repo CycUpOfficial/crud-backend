@@ -60,7 +60,7 @@ export const env = {
         password: process.env.REDIS_PASSWORD || undefined
     },
     mongo: {
-        uri: process.env.MONGO_URI ?? "mongodb://localhost:27017/cycup"
+        uri: process.env.MONGO_URI ?? "mongodb://mongo:27017/cycup"
     },
     mail: {
         host: process.env.SMTP_HOST ?? "smtp.example.com",

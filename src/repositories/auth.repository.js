@@ -17,6 +17,13 @@ export const getUserById = (id) =>
         }
     });
 
+export const getUserByUsername = (username) =>
+    prisma.user.findFirst({
+        where: {
+            username: { equals: username, mode: "insensitive" }
+        }
+    });
+
 export const getVerificationPinByUserId = (userId) =>
     prisma.verificationPin.findUnique({ where: { userId } });
 
