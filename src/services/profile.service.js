@@ -1,6 +1,7 @@
-import {getCityByName, getUserProfileById, updateUserProfileById} from "../repositories/profile.repository.js";
+import {getCityByName, getUserByUsername, getUserProfileById, updateUserProfileById} from "../repositories/profile.repository.js";
 
 const normalizeText = (value) => value?.trim();
+const normalizeUsername = (value) => value?.trim();
 
 function failIfUserNotFound(user) {
     if (!user) {
@@ -24,6 +25,7 @@ export const getCurrentUserProfile = async (userId) => {
 
 export const updateUserProfile = async ({
     userId,
+    username,
     firstName,
     familyName,
     address,
@@ -35,6 +37,16 @@ export const updateUserProfile = async ({
     const user = await getUserProfileById(userId);
     failIfUserNotFound(user);
 
+    const normalizedUsername = normalizeUsername(username);
+    if (normalizedUsername && normalizedUsername !== user.username) {
+        const existingUser = await getUserByUsername(normalizedUsername);
+        if (existingUser && existingUser.id !== userId) {
+            const error = new Error("A user with this username already exists.");
+            error.statusCode = 400;
+            throw error;
+        }
+    }
+
     const cityName = normalizeText(city);
     const cityRecord = await getCityByName(cityName);
     if (!cityRecord) {
@@ -42,6 +54,7 @@ export const updateUserProfile = async ({
     }
 
     const updateData = {
+        username: normalizedUsername,
         firstName: normalizeText(firstName),
         familyName: normalizeText(familyName),
         address: normalizeText(address),

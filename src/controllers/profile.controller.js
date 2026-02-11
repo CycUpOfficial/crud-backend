@@ -32,7 +32,7 @@ export const updateProfile = async (req, res) => {
         throw error;
     }
 
-    const { firstName, familyName, address, postalCode, city, phoneNumber } = result.data.body;
+    const { username, firstName, familyName, address, postalCode, city, phoneNumber } = result.data.body;
     const uploadedImage = file
         ? await saveImage({ file, folder: "profile-images" })
         : null;
@@ -40,6 +40,7 @@ export const updateProfile = async (req, res) => {
     // todo: we need a better validation.
     const user = await updateUserProfile({
         userId: req.auth.userId,
+        username,
         firstName,
         familyName,
         address,

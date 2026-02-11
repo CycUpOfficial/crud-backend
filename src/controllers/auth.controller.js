@@ -9,8 +9,8 @@ export const register = async (req, res) => {
 };
 
 export const verify = async (req, res) => {
-    const { email, pinCode, password, passwordConfirmation } = req.validated.body;
-    const result = await verifyUser({ email, pinCode, password, passwordConfirmation });
+    const { email, pinCode, username, password, passwordConfirmation } = req.validated.body;
+    const result = await verifyUser({ email, pinCode, username, password, passwordConfirmation });
     res.status(200).json(toVerifyResponseDto(result));
 };
 

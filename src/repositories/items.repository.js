@@ -95,6 +95,7 @@ export const getItemWithDetails = (itemId) =>
             owner: {
                 select: {
                     id: true,
+                    username: true,
                     firstName: true,
                     familyName: true,
                     email: true
