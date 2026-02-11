@@ -5,8 +5,8 @@ import { seedCities } from "./seeders/cities.seeder.js";
 
 const startServer = async () => {
     try {
-        await seedCategories();
-        await seedCities();
+        // await seedCategories();
+        // await seedCities();
         //todo: extract seeders. 
     } catch (error) {
         console.error("Failed to seed data", error);

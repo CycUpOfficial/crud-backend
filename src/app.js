@@ -2,8 +2,11 @@ import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 import morgan from "morgan";
+import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import swaggerUi from "swagger-ui-express";
+import { parse as parseYaml } from "yaml";
 import { env } from "./config/env.js";
 import healthRoutes from "./routes/health.routes.js";
 import authRoutes from "./routes/auth.routes.js";
@@ -20,27 +23,10 @@ import { errorHandler } from "./middlewares/error.middleware.js";
 const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const allowedOrigins = new Set([env.frontend.url]);
-const corsOptions = {
-	origin: (origin, callback) => {
-		if (!origin) {
-			callback(null, true);
-			return;
-		}
-		if (allowedOrigins.has(origin)) {
-			callback(null, true);
-			return;
-		}
-		callback(new Error(`CORS blocked for origin: ${origin}`));
-	},
-	credentials: true,
-	methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-	allowedHeaders: ["Content-Type", "Authorization"]
-};
+
 
 app.use(helmet());
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+app.use(cors());
 app.use(morgan("dev"));
 app.use(express.json());
 if (env.storage.driver === "local") {
@@ -69,9 +55,17 @@ const setupBullBoard = async () => {
 void setupBullBoard();
 
 if (env.nodeEnv !== "production") {
-	app.get("/api/docs", (req, res) => {
-		res.sendFile(path.resolve(__dirname, "..", "cycup.yml"));
-	});
+	const specPath = path.resolve(__dirname, "..", "cycup.yml");
+	let swaggerSpec = null;
+	try {
+		const yamlText = fs.readFileSync(specPath, "utf8");
+		swaggerSpec = parseYaml(yamlText);
+	} catch (error) {
+		console.error("Failed to load cycup.yml", error);
+	}
+	if (swaggerSpec) {
+		app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+	}
 }
 
 app.use("/api", requireAuth);
