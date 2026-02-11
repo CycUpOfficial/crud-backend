@@ -29,7 +29,7 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
-    command: sh -c "npx prisma migrate dev --name init && npm run dev"
+    command: sh -c "npm run dev"
 
   worker-email:
     build: .
