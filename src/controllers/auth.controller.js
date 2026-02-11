@@ -1,6 +1,7 @@
 import { registerUser, verifyUser, loginUser, logoutUser, requestPasswordReset, confirmPasswordReset } from "../services/auth.service.js";
 import { toRegisterResponseDto, toVerifyResponseDto, toLoginResponseDto, toPasswordResetResponseDto, toConfirmPasswordResetResponseDto } from "../dtos/auth.dto.js";
 import { parseCookies } from "../utils/cookieparser.js";
+import { env } from "../config/env.js";
 
 export const register = async (req, res) => {
     const { email } = req.validated.body;
@@ -20,8 +21,9 @@ export const login = async (req, res) => {
 
     res.cookie(result.cookieName, result.sessionToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        secure: env.cookie.secure,
+        sameSite: env.cookie.sameSite,
+        domain: env.cookie.domain,
         expires: result.expiresAt
     });
 
@@ -30,14 +32,15 @@ export const login = async (req, res) => {
 
 export const logout = async (req, res) => {
     const cookies = req.cookies ?? parseCookies(req.headers.cookie);
-    const sessionToken = cookies?.session;
+    const sessionToken = cookies?.[env.cookie.name];
 
     await logoutUser(sessionToken);
 
-    res.clearCookie("session", {
+    res.clearCookie(env.cookie.name, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax"
+        secure: env.cookie.secure,
+        sameSite: env.cookie.sameSite,
+        domain: env.cookie.domain
     });
 
     res.status(200).end();

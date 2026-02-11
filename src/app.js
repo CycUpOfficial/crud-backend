@@ -13,12 +13,22 @@ import adminRoutes from "./routes/admin.routes.js";
 import ratingsRoutes from "./routes/ratings.routes.js";
 import { requireAuth } from "./middlewares/auth.middleware.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
+import { env } from "./config/env.js";
 
 const app = express();
 
+if (env.trustProxy) {
+	app.set("trust proxy", 1);
+}
+
 app.use(helmet());
-app.use(cors());
-app.use(morgan("dev"));
+app.use(
+	cors({
+		origin: env.cors.origins,
+		credentials: true
+	})
+);
+app.use(morgan(env.nodeEnv === "production" ? "combined" : "dev"));
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 

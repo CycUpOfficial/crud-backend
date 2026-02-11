@@ -4,12 +4,13 @@ import { seedCategories } from "./seeders/categories.seeder.js";
 import { seedCities } from "./seeders/cities.seeder.js";
 
 const startServer = async () => {
-    try {
-        await seedCategories();
-        await seedCities();
-        //todo: extract seeders. 
-    } catch (error) {
-        console.error("Failed to seed data", error);
+    if (env.seedOnStart) {
+        try {
+            await seedCategories();
+            await seedCities();
+        } catch (error) {
+            console.error("Failed to seed data", error);
+        }
     }
 
     app.listen(env.port, () => {

@@ -15,6 +15,7 @@ import {
     resetPasswordAndVerifyUser
 } from "../repositories/auth.repository.js";
 import { enqueueVerificationEmail, enqueuePasswordResetEmail } from "../queues/email.queue.js";
+import { env } from "../config/env.js";
 
 const TRUSTED_UNIVERSITY_DOMAINS = [
     "abo.fi",
@@ -25,7 +26,7 @@ const PIN_LENGTH = 6;
 const PIN_EXPIRY_MINUTES = 15;
 const SESSION_EXPIRY_DAYS = 7;
 const SESSION_TOKEN_BYTES = 32;
-const SESSION_COOKIE_NAME = "session";
+const SESSION_COOKIE_NAME = env.cookie.name;
 const RESET_TOKEN_BYTES = 32;
 const RESET_TOKEN_EXPIRY_MINUTES = 60;
 
