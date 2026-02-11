@@ -2,6 +2,8 @@ import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 import morgan from "morgan";
+import path from "path";
+import { fileURLToPath } from "url";
 import { env } from "./config/env.js";
 import healthRoutes from "./routes/health.routes.js";
 import authRoutes from "./routes/auth.routes.js";
@@ -16,6 +18,7 @@ import { requireAuth } from "./middlewares/auth.middleware.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 
 const app = express();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const allowedOrigins = new Set([env.frontend.url]);
 const corsOptions = {
@@ -64,6 +67,12 @@ const setupBullBoard = async () => {
 };
 
 void setupBullBoard();
+
+if (env.nodeEnv !== "production") {
+	app.get("/api/docs", (req, res) => {
+		res.sendFile(path.resolve(__dirname, "..", "cycup.yml"));
+	});
+}
 
 app.use("/api", requireAuth);
 app.use("/api", dashboardRoutes);
