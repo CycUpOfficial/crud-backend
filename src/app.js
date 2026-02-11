@@ -60,14 +60,16 @@ const setupBullBoard = async () => {
 void setupBullBoard();
 
 if (env.nodeEnv !== "production") {
-	const specPath = path.resolve(process.cwd(), "cycup-api.yml");
+	const ymlPath = path.resolve(process.cwd(), "cycup-api.yml");
+	const yamlPath = path.resolve(process.cwd(), "cycup-api.yaml");
+	const specPath = fs.existsSync(ymlPath) ? ymlPath : yamlPath;
 	let swaggerSpec = null;
 
 	try {
 		const yamlText = fs.readFileSync(specPath, "utf8");
 		swaggerSpec = parseYaml(yamlText);
 	} catch (error) {
-		console.error("Failed to load cycup-api.yml", error);
+		console.error("Failed to load cycup-api.yml/.yaml", error);
 	}
 
 	if (swaggerSpec) {

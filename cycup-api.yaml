@@ -8,7 +8,7 @@ info:
     email: support@cycup.com
 
 servers:
-  - url: https://api.cycup.com/v1
+  - url: http://localhost:3000/
     description: Production server
   - url: https://staging-api.cycup.com/v1
     description: Staging server
@@ -270,6 +270,44 @@ paths:
       responses:
         '200':
           description: Logout successful
+
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user
+      description: Returns the authenticated user's basic information
+      operationId: getCurrentUser
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Current user info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 123
+                  email:
+                    type: string
+                    format: email
+                    example: student@university.edu
+                  username:
+                    type: string
+                    example: student123
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Not authorized to take this action.
 
   /auth/password/reset:
     post:
