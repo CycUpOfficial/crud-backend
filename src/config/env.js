@@ -32,6 +32,7 @@ const dbPassword = process.env.DB_PASSWORD ?? "";
 const dbName = process.env.DB_NAME ?? "app_db";
 const frontendUrl = process.env.FRONTEND_URL ?? process.env.Frontend_URL ?? "http://localhost:3000";
 const corsOrigins = parseList(process.env.CORS_ORIGINS);
+const storageDriver = (process.env.STORAGE_DRIVER ?? "local").toLowerCase();
 
 export const env = {
     nodeEnv,
@@ -70,6 +71,22 @@ export const env = {
     },
     cors: {
         origins: corsOrigins.length > 0 ? corsOrigins : [frontendUrl]
+    },
+    storage: {
+        driver: storageDriver,
+        local: {
+            baseDir: process.env.STORAGE_LOCAL_DIR ?? "uploads",
+            baseUrl: process.env.STORAGE_LOCAL_URL ?? "/uploads"
+        },
+        s3: {
+            bucket: process.env.S3_BUCKET ?? "",
+            region: process.env.S3_REGION ?? process.env.AWS_REGION ?? "",
+            accessKeyId: process.env.S3_ACCESS_KEY_ID ?? process.env.AWS_ACCESS_KEY_ID ?? "",
+            secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? process.env.AWS_SECRET_ACCESS_KEY ?? "",
+            endpoint: process.env.S3_ENDPOINT ?? "",
+            baseUrl: process.env.S3_BASE_URL ?? "",
+            forcePathStyle: parseBoolean(process.env.S3_FORCE_PATH_STYLE, false)
+        }
     },
     cookie: {
         name: process.env.COOKIE_NAME ?? "session",

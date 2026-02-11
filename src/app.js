@@ -30,7 +30,9 @@ app.use(
 );
 app.use(morgan(env.nodeEnv === "production" ? "combined" : "dev"));
 app.use(express.json());
-app.use("/uploads", express.static("uploads"));
+if (env.storage?.driver === "local") {
+	app.use(env.storage.local.baseUrl, express.static(env.storage.local.baseDir));
+}
 
 const setupBullBoard = async () => {
 	if (process.env.NODE_ENV === "production") return;
