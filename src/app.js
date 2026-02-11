@@ -24,9 +24,9 @@ const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 
-
-app.use(helmet());
 app.use(cors());
+app.options('*', cors()); // ensures preflight handled
+app.use(helmet());
 app.use(morgan("dev"));
 app.use(express.json());
 if (env.storage.driver === "local") {
