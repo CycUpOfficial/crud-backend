@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import {
     getUserByEmail,
+    getUserById,
     getUserByUsername,
     createUserWithVerificationPin,
     getVerificationPinByUserId,
@@ -275,4 +276,15 @@ export const confirmPasswordReset = async ({ token, newPassword, passwordConfirm
     return {
         message: "Password reset successful"
     };
+};
+
+export const getCurrentUser = async (userId) => {
+    const user = await getUserById(userId);
+    if (!user) {
+        const error = new Error("Not authorized to take this action.");
+        error.statusCode = 401;
+        throw error;
+    }
+
+    return user;
 };

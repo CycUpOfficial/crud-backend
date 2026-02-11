@@ -1,5 +1,5 @@
-import { registerUser, verifyUser, loginUser, logoutUser, requestPasswordReset, confirmPasswordReset } from "../services/auth.service.js";
-import { toRegisterResponseDto, toVerifyResponseDto, toLoginResponseDto, toPasswordResetResponseDto, toConfirmPasswordResetResponseDto } from "../dtos/auth.dto.js";
+import { registerUser, verifyUser, loginUser, logoutUser, requestPasswordReset, confirmPasswordReset, getCurrentUser } from "../services/auth.service.js";
+import { toRegisterResponseDto, toVerifyResponseDto, toLoginResponseDto, toPasswordResetResponseDto, toConfirmPasswordResetResponseDto, toCurrentUserResponseDto } from "../dtos/auth.dto.js";
 import { parseCookies } from "../utils/cookieparser.js";
 import { env } from "../config/env.js";
 
@@ -56,4 +56,9 @@ export const confirmPasswordResetController = async (req, res) => {
     const { token, newPassword, passwordConfirmation } = req.validated.body;
     const result = await confirmPasswordReset({ token, newPassword, passwordConfirmation });
     res.status(200).json(toConfirmPasswordResetResponseDto(result));
+};
+
+export const me = async (req, res) => {
+    const user = await getCurrentUser(req.auth.userId);
+    res.status(200).json(toCurrentUserResponseDto(user));
 };

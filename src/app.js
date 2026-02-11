@@ -2,6 +2,10 @@ import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 import morgan from "morgan";
+import fs from "fs";
+import path from "path";
+import swaggerUi from "swagger-ui-express";
+import { parse as parseYaml } from "yaml";
 import healthRoutes from "./routes/health.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import profileRoutes from "./routes/profile.routes.js";
@@ -54,6 +58,26 @@ const setupBullBoard = async () => {
 };
 
 void setupBullBoard();
+
+if (env.nodeEnv !== "production") {
+	const specPath = path.resolve(process.cwd(), "cycup-api.yml");
+	let swaggerSpec = null;
+
+	try {
+		const yamlText = fs.readFileSync(specPath, "utf8");
+		swaggerSpec = parseYaml(yamlText);
+	} catch (error) {
+		console.error("Failed to load cycup-api.yml", error);
+	}
+
+	if (swaggerSpec) {
+		app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+	} else {
+		app.get("/api/docs", (req, res) => {
+			res.status(404).json({ message: "Swagger spec not found." });
+		});
+	}
+}
 
 app.use("/api", requireAuth);
 app.use("/api", dashboardRoutes);
