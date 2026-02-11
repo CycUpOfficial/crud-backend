@@ -1,4 +1,18 @@
 services:
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "npx prisma migrate deploy"
+    restart: "no"
+
   api:
     build:
       context: .
@@ -10,6 +24,8 @@ services:
     environment:
       NODE_ENV: production
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:
