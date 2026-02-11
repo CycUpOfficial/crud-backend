@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "nodemon --legacy-watch --watch src --ext js,json src/server.js",
     "start": "node src/server.js",
+    "seed": "node src/seed.js",
     "test": "jest",
     "worker:email": "node src/workers/email.worker.js"
   },

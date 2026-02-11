@@ -37,7 +37,6 @@ export const env = {
     nodeEnv,
     port: parseNumber(process.env.PORT, 3000),
     trustProxy: parseBoolean(process.env.TRUST_PROXY, nodeEnv === "production"),
-    seedOnStart: parseBoolean(process.env.SEED_ON_START, nodeEnv !== "production"),
     db: {
         host: dbHost,
         port: dbPort,
