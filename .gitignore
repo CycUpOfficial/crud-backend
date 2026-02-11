@@ -4,3 +4,5 @@ node_modules
 .idea/*
 /uploads
 /uploads/*
+/logs
+/logs/*

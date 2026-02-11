@@ -1,5 +1,6 @@
 import { deleteSessionByToken, getSessionByToken } from "../repositories/auth.repository.js";
 import { parseCookies } from "../utils/cookieparser.js";
+import { env } from "../config/env.js";
 
 const PUBLIC_PATHS = new Set([
     "/health",
@@ -41,7 +42,7 @@ export const requireAuth = async (req, res, next) => {
     if (passIfRequestedResourceIsPublic(req, next)) return;
 
     const cookies = req.cookies ?? parseCookies(req.headers.cookie);
-    const sessionToken = cookies?.session;
+    const sessionToken = cookies?.[env.cookie.name];
 
     if (!sessionToken) {
         const error = new Error("Not authorized to take this action.");
@@ -61,7 +62,6 @@ export const requireAuth = async (req, res, next) => {
         error.statusCode = 401;
         return next(error);
     }
-    console.log('moz');
     req.auth = {
         userId: session.userId,
         sessionToken

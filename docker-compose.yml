@@ -1,58 +1,80 @@
 services:
+  migrate:
+    build:
+      context: .
+      args:
+        PORT: ${PORT}
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: sh -c "npx prisma migrate dev --name init --skip-seed"
+    restart: "no"
+
+  seed:
+    build:
+      context: .
+      args:
+        PORT: ${PORT}
+    env_file:
+      - .env
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: sh -c "npm run seed"
+    restart: "no"
+
   api:
-    build: .
+    build:
+      context: .
+      args:
+        PORT: ${PORT}
     ports:
-      - "3000:3000"
+      - "${PORT}:${PORT}"
     env_file:
       - .env
     environment:
-      CHOKIDAR_USEPOLLING: "true"
-      CHOKIDAR_INTERVAL: "1000"
-      DATABASE_URL: postgresql://postgres:${DB_PASSWORD}@db:5432/app_db
-      NODE_ENV: development
-      PORT: 3000
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: app_db
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      SMTP_HOST: mailpit
-      SMTP_PORT: 1025
-      MAIL_FROM: "no-reply@cycup.local"
+      CHOKIDAR_USEPOLLING: ${CHOKIDAR_USEPOLLING:-true}
+      CHOKIDAR_INTERVAL: ${CHOKIDAR_INTERVAL:-1000}
     depends_on:
+      migrate:
+        condition: service_completed_successfully
+      seed:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mongo:
+        condition: service_started
     volumes:
       - .:/app
       - /app/node_modules
     command: sh -c "npm run dev"
 
   worker-email:
-    build: .
+    build:
+      context: .
+      args:
+        PORT: ${PORT}
     env_file:
       - .env
-    environment:
-      DATABASE_URL: postgresql://postgres:${DB_PASSWORD}@db:5432/app_db
-      NODE_ENV: development
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: app_db
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      SMTP_HOST: mailpit
-      SMTP_PORT: 1025
-      MAIL_FROM: "no-reply@cycup.local"
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mongo:
+        condition: service_started
     volumes:
       - .:/app
       - /app/node_modules
@@ -61,11 +83,11 @@ services:
   db:
     image: postgres:16-alpine
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     environment:
-      POSTGRES_USER: postgres
+      POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: app_db
+      POSTGRES_DB: ${DB_NAME}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -77,18 +99,26 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 10
 
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+
   mailpit:
     image: axllent/mailpit:latest
     ports:
-      - "8025:8025"
-      - "1025:1025"
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+      - "${SMTP_PORT:-1025}:1025"
 
 volumes:
   pgdata:
+  mongodata:

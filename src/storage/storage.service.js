@@ -1,14 +1,23 @@
 import path from "path";
 import multer from "multer";
-import { createLocalStorageDriver } from "./drivers/local.driver.js";
+import { env } from "../config/env.js";
+import { createStorageDriver } from "./storage.factory.js";
 
 const DEFAULT_ALLOWED_MIME_TYPES = ["image/jpeg", "image/png"];
 const DEFAULT_MAX_FILE_SIZE = 3 * 1024 * 1024;
 
-const baseDir = path.join(process.cwd(), "uploads");
-const baseUrl = "/uploads";
+const baseDir = path.isAbsolute(env.storage.local.baseDir)
+    ? env.storage.local.baseDir
+    : path.join(process.cwd(), env.storage.local.baseDir);
 
-const driver = createLocalStorageDriver({ baseDir, baseUrl });
+const driver = createStorageDriver({
+    driver: env.storage.driver,
+    local: {
+        baseDir,
+        baseUrl: env.storage.local.baseUrl
+    },
+    s3: env.storage.s3
+});
 
 const createMemoryUploader = ({ allowedMimeTypes, maxFileSize } = {}) => {
     const fileFilter = (req, file, cb) => {
@@ -66,7 +75,8 @@ export const saveFile = async ({ file, folder }) => {
     return driver.save({
         folder,
         originalName: file.originalname,
-        buffer: file.buffer
+        buffer: file.buffer,
+        mimeType: file.mimetype
     });
 };
 
