@@ -27,11 +27,21 @@ if (env.trustProxy) {
 }
 
 app.use(helmet());
+// app.use(
+// 	cors({
+// 		origin: env.cors.origins,
+// 		credentials: true
+// 	})
+// );
+
+
 app.use(
 	cors({
-		origin: env.cors.origins,
-		credentials: true
-	})
+		origin: ["http://localhost:4000"], // your frontend origin
+		credentials: true,
+		methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+		allowedHeaders: ["Content-Type", "Authorization"],
+	}),
 );
 app.use(morgan(env.nodeEnv === "production" ? "combined" : "dev"));
 app.use(express.json());
