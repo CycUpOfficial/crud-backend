@@ -2,6 +2,10 @@ import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 import morgan from "morgan";
+import fs from "fs";
+import path from "path";
+import swaggerUi from "swagger-ui-express";
+import { parse as parseYaml } from "yaml";
 import healthRoutes from "./routes/health.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import profileRoutes from "./routes/profile.routes.js";
@@ -11,18 +15,31 @@ import itemsRoutes from "./routes/items.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
 import ratingsRoutes from "./routes/ratings.routes.js";
+import chatRoutes from "./routes/chat.routes.js";
 import notificationsRoutes from "./routes/notifications.routes.js";
 import savedSearchRoutes from "./routes/saved-search.routes.js";
 import { requireAuth } from "./middlewares/auth.middleware.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
+import { env } from "./config/env.js";
 
 const app = express();
 
+if (env.trustProxy) {
+	app.set("trust proxy", 1);
+}
+
 app.use(helmet());
-app.use(cors());
-app.use(morgan("dev"));
+app.use(
+	cors({
+		origin: env.cors.origins,
+		credentials: true
+	})
+);
+app.use(morgan(env.nodeEnv === "production" ? "combined" : "dev"));
 app.use(express.json());
-app.use("/uploads", express.static("uploads"));
+if (env.storage?.driver === "local") {
+	app.use(env.storage.local.baseUrl, express.static(env.storage.local.baseDir));
+}
 
 const setupBullBoard = async () => {
 	if (process.env.NODE_ENV === "production") return;
@@ -45,6 +62,28 @@ const setupBullBoard = async () => {
 
 void setupBullBoard();
 
+if (env.nodeEnv !== "production") {
+	const ymlPath = path.resolve(process.cwd(), "cycup-api.yml");
+	const yamlPath = path.resolve(process.cwd(), "cycup-api.yaml");
+	const specPath = fs.existsSync(ymlPath) ? ymlPath : yamlPath;
+	let swaggerSpec = null;
+
+	try {
+		const yamlText = fs.readFileSync(specPath, "utf8");
+		swaggerSpec = parseYaml(yamlText);
+	} catch (error) {
+		console.error("Failed to load cycup-api.yml/.yaml", error);
+	}
+
+	if (swaggerSpec) {
+		app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+	} else {
+		app.get("/api/docs", (req, res) => {
+			res.status(404).json({ message: "Swagger spec not found." });
+		});
+	}
+}
+
 app.use("/api", requireAuth);
 app.use("/api", dashboardRoutes);
 app.use("/api", healthRoutes);
@@ -54,9 +93,10 @@ app.use("/api", categoriesRoutes);
 app.use("/api", citiesRoutes);
 app.use("/api", itemsRoutes);
 app.use("/api", adminRoutes);
+app.use("/api", chatRoutes);
 app.use("/api/items/:itemId/ratings", ratingsRoutes);
-app.use("/api", savedSearchRoutes);
 app.use("/api", notificationsRoutes);
+app.use("/api", savedSearchRoutes);
 
 app.use(errorHandler);
 

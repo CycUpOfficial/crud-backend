@@ -1,5 +1,6 @@
 import { deleteSessionByToken, getSessionByToken } from "../repositories/auth.repository.js";
 import { parseCookies } from "../utils/cookieparser.js";
+import { env } from "../config/env.js";
 
 const PUBLIC_PATHS = new Set([
     "/health",
@@ -10,7 +11,10 @@ const PUBLIC_PATHS = new Set([
     "/auth/password/reset/confirm",
     "/categories",
     "/cities",
-    "/items",
+]);
+
+const PUBLIC_METHOD_ROUTES = new Set([
+    "GET /items"
 ]);
 
 function passIfRequestMethodIsOptions(req, next) {
@@ -22,6 +26,10 @@ function passIfRequestMethodIsOptions(req, next) {
 }
 
 function passIfRequestedResourceIsPublic(req, next) {
+    if (PUBLIC_METHOD_ROUTES.has(`${req.method} ${req.path}`)) {
+        next();
+        return true;
+    }
     if (PUBLIC_PATHS.has(req.path)) {
         next();
         return true;
@@ -34,7 +42,7 @@ export const requireAuth = async (req, res, next) => {
     if (passIfRequestedResourceIsPublic(req, next)) return;
 
     const cookies = req.cookies ?? parseCookies(req.headers.cookie);
-    const sessionToken = cookies?.session;
+    const sessionToken = cookies?.[env.cookie.name];
 
     if (!sessionToken) {
         const error = new Error("Not authorized to take this action.");

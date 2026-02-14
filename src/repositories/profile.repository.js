@@ -6,6 +6,13 @@ export const getUserProfileById = (userId) =>
         include: { city: true }
     });
 
+export const getUserByUsername = (username) =>
+    prisma.user.findFirst({
+        where: {
+            username: { equals: username, mode: "insensitive" }
+        }
+    });
+
 export const updateUserProfileById = (userId, data) =>
     prisma.user.update({
         where: { id: userId },

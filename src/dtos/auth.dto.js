@@ -19,3 +19,9 @@ export const toPasswordResetResponseDto = (result) => ({
 export const toConfirmPasswordResetResponseDto = (result) => ({
     message: result.message
 });
+
+export const toCurrentUserResponseDto = (user) => ({
+    id: user.id,
+    email: user.email,
+    username: user.username
+});

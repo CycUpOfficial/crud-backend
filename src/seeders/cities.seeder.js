@@ -1,3 +1,5 @@
+// noinspection SpellCheckingInspection
+
 import { prisma } from "../db/index.js";
 
 const CITY_SEED = [

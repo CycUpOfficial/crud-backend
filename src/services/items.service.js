@@ -3,9 +3,17 @@ import {
     getCategoryById,
     getCityById,
     getUserForItemCreate,
+    getItemById,
+    getItemWithDetails,
+    listRelatedItemIds,
     listItems as listItemsRepository,
-    countItems
+    countItems,
+    updateItemById,
+    updateItemWithPhotos,
+    softDeleteItemById,
+    markItemAsSoldById
 } from "../repositories/items.repository.js";
+import { getUserByEmail } from "../repositories/auth.repository.js";
 
 const normalizeText = (value) => value?.trim();
 
@@ -47,6 +55,42 @@ const failIfCityInvalid = (cityId) => {
 
 const failIfItemTypeInvalid = (message) => {
     const error = new Error(message);
+    error.statusCode = 400;
+    throw error;
+};
+
+const failIfItemNotFound = () => {
+    const error = new Error("Not found.");
+    error.statusCode = 404;
+    throw error;
+};
+
+const failIfItemNotOwned = () => {
+    const error = new Error("Not authorized to take this action.");
+    error.statusCode = 403;
+    throw error;
+};
+
+const failIfItemNotUpdatable = () => {
+    const error = new Error("Item cannot be updated.");
+    error.statusCode = 400;
+    throw error;
+};
+
+const failIfItemAlreadySold = () => {
+    const error = new Error("This item has already been marked as sold.");
+    error.statusCode = 400;
+    throw error;
+};
+
+const failIfBuyerNotFound = () => {
+    const error = new Error("Buyer with this email address not found in the system.");
+    error.statusCode = 400;
+    throw error;
+};
+
+const failIfBuyerIsOwner = () => {
+    const error = new Error("You cannot mark yourself as the buyer of your own item.");
     error.statusCode = 400;
     throw error;
 };
@@ -240,4 +284,165 @@ export const listItems = async ({
             totalPages: total ? Math.ceil(total / safeLimit) : 0
         }
     };
+};
+
+export const getItemDetails = async ({ itemId }) => {
+    const item = await getItemWithDetails(itemId);
+    if (!item || item.status !== "published" || item.isDisabledByAdmin) {
+        failIfItemNotFound();
+    }
+    const relatedItems = await listRelatedItemIds({
+        itemId,
+        categoryId: item.categoryId
+    });
+
+    return {
+        ...item,
+        relatedItemIds: relatedItems.map((related) => related.id)
+    };
+};
+
+export const updateItem = async ({
+    itemId,
+    userId,
+    title,
+    categoryId,
+    brandName,
+    condition,
+    description,
+    address,
+    cityId,
+    itemType,
+    sellingPrice,
+    lendingPrice,
+    rentUnit,
+    photos
+}) => {
+    const user = await getUserForItemCreate(userId);
+    failIfUserNotFound(user);
+    failIfUserNotVerified(user);
+    failIfUserBlocked(user);
+
+    const item = await getItemById(itemId);
+    if (!item) {
+        failIfItemNotFound();
+    }
+
+    if (item.ownerId !== userId) {
+        failIfItemNotOwned();
+    }
+
+    if (item.status !== "published") {
+        failIfItemNotUpdatable();
+    }
+
+    const nextItemType = itemType ?? item.itemType;
+    let nextSellingPrice = sellingPrice ?? item.sellingPrice;
+    let nextLendingPrice = lendingPrice ?? item.lendingPrice;
+    let nextRentUnit = rentUnit ?? item.rentUnit;
+
+    if (itemType && itemType !== item.itemType) {
+        if (itemType === "giveaway") {
+            nextSellingPrice = null;
+            nextLendingPrice = null;
+            nextRentUnit = null;
+        } else if (itemType === "selling") {
+            nextLendingPrice = null;
+            nextRentUnit = null;
+        } else if (itemType === "lending") {
+            nextSellingPrice = null;
+        }
+    }
+
+    validateItemPricing({
+        itemType: nextItemType,
+        sellingPrice: nextSellingPrice,
+        lendingPrice: nextLendingPrice,
+        rentUnit: nextRentUnit
+    });
+
+    const updateData = {};
+    if (title !== undefined) updateData.title = normalizeText(title);
+    if (brandName !== undefined) updateData.brandName = normalizeText(brandName);
+    if (condition !== undefined) updateData.condition = condition;
+    if (description !== undefined) updateData.description = normalizeText(description);
+    if (address !== undefined) updateData.address = normalizeText(address);
+
+    if (categoryId !== undefined) {
+        const category = await getCategoryById(categoryId);
+        if (!category) {
+            failIfCategoryInvalid(categoryId);
+        }
+        updateData.categoryId = category.id;
+    }
+
+    if (cityId !== undefined) {
+        const city = await getCityById(cityId);
+        if (!city) {
+            failIfCityInvalid(cityId);
+        }
+        updateData.cityId = city.id;
+    }
+
+    if (itemType !== undefined) updateData.itemType = nextItemType;
+    if (sellingPrice !== undefined || itemType !== undefined) updateData.sellingPrice = nextSellingPrice ?? null;
+    if (lendingPrice !== undefined || itemType !== undefined) updateData.lendingPrice = nextLendingPrice ?? null;
+    if (rentUnit !== undefined || itemType !== undefined) updateData.rentUnit = nextRentUnit ?? null;
+
+    if (photos?.length) {
+        return updateItemWithPhotos(itemId, updateData, photos);
+    }
+
+    return updateItemById(itemId, updateData);
+};
+
+export const deleteItem = async ({ itemId, userId }) => {
+    const item = await getItemById(itemId);
+    if (!item) {
+        failIfItemNotFound();
+    }
+
+    if (item.ownerId !== userId) {
+        failIfItemNotOwned();
+    }
+
+    if (item.status === "deleted") {
+        return { deleted: false };
+    }
+
+    await softDeleteItemById(itemId);
+    return { deleted: true };
+};
+
+export const markItemAsSold = async ({ itemId, userId, buyerEmail }) => {
+    const item = await getItemById(itemId);
+    if (!item || item.isDisabledByAdmin) {
+        failIfItemNotFound();
+    }
+
+    if (item.ownerId !== userId) {
+        failIfItemNotOwned();
+    }
+
+    if (item.status === "sold") {
+        failIfItemAlreadySold();
+    }
+
+    if (item.status === "deleted") {
+        failIfItemNotFound();
+    }
+
+    const buyer = await getUserByEmail(buyerEmail);
+    if (!buyer) {
+        failIfBuyerNotFound();
+    }
+
+    if (buyer.id === item.ownerId) {
+        failIfBuyerIsOwner();
+    }
+
+    return markItemAsSoldById({
+        itemId,
+        buyerId: buyer.id
+    });
 };

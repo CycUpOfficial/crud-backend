@@ -5,6 +5,25 @@ import { prisma } from "../db/index.js";
 export const getUserByEmail = (email) =>
     prisma.user.findUnique({ where: { email } });
 
+export const getUserById = (id) =>
+    prisma.user.findUnique({
+        where: { id },
+        select: {
+            id: true,
+            email: true,
+            username: true,
+            isVerified: true,
+            isBlocked: true
+        }
+    });
+
+export const getUserByUsername = (username) =>
+    prisma.user.findFirst({
+        where: {
+            username: { equals: username, mode: "insensitive" }
+        }
+    });
+
 export const getVerificationPinByUserId = (userId) =>
     prisma.verificationPin.findUnique({ where: { userId } });
 
@@ -28,11 +47,11 @@ export const createUserWithVerificationPin = (email, pinCode, expiresAt) =>
         return user;
     });
 
-export const verifyUserAndSetPassword = (userId, passwordHash) =>
+export const verifyUserAndSetPassword = (userId, passwordHash, username) =>
     prisma.$transaction(async (tx) => {
         const user = await tx.user.update({
             where: { id: userId },
-            data: { isVerified: true, passwordHash }
+            data: { isVerified: true, passwordHash, username }
         });
 
         await tx.verificationPin.delete({
