@@ -36,7 +36,7 @@ const storageDriver = (process.env.STORAGE_DRIVER ?? "local").toLowerCase();
 
 export const env = {
     nodeEnv,
-    port: parseNumber(process.env.PORT, 3000),
+    port: parseNumber(process.env.PORT, 8000),
     trustProxy: parseBoolean(process.env.TRUST_PROXY, nodeEnv === "production"),
     db: {
         host: dbHost,
