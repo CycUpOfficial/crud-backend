@@ -1,4 +1,7 @@
-const request = require("supertest");
+import request from "supertest";
+import app from "../../app.js";
+import { env } from "../../config/env.js";
+import { createSession, createUser } from "./factories.js";
 
 const BASE_URL = process.env.API_BASE_URL || "http://localhost:3000";
 const API_PREFIX = process.env.API_PREFIX || "/api";
@@ -106,6 +109,20 @@ async function fetchLatestPinForEmail(email, { retries = 25, delayMs = 700 } = {
   throw new Error(`PIN not found for ${email} in Mailpit/MailHog after retries.`);
 }
 
+export const createAuthContext = async (overrides = {}) => {
+  const user = await createUser(overrides.user ?? {});
+  const { sessionToken } = await createSession(user.id, overrides.session ?? {});
+  const cookie = `${env.cookie.name}=${sessionToken}`;
+
+  return {
+    agent: request.agent(app),
+    user,
+    sessionToken,
+    cookie,
+    headers: { Cookie: cookie }
+  };
+};
+
 async function createAndLoginTestUser() {
   const email = makeTestEmail();
   const password = "SecurePass123!";
@@ -135,11 +152,11 @@ async function createAndLoginTestUser() {
   return { agent, email, password, loginRes };
 }
 
-module.exports = {
+export {
   BASE_URL,
   API_PREFIX,
   MAIL_UI_BASE,
   makeTestEmail,
   fetchLatestPinForEmail,
-  createAndLoginTestUser,
+  createAndLoginTestUser
 };
