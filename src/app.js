@@ -2,18 +2,114 @@ import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 import morgan from "morgan";
+import fs from "fs";
+import path from "path";
+import swaggerUi from "swagger-ui-express";
+import { parse as parseYaml } from "yaml";
 import healthRoutes from "./routes/health.routes.js";
+import authRoutes from "./routes/auth.routes.js";
+import profileRoutes from "./routes/profile.routes.js";
+import categoriesRoutes from "./routes/categories.routes.js";
+import citiesRoutes from "./routes/cities.routes.js";
+import itemsRoutes from "./routes/items.routes.js";
+import dashboardRoutes from "./routes/dashboard.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
+import ratingsRoutes from "./routes/ratings.routes.js";
+import chatRoutes from "./routes/chat.routes.js";
+import notificationsRoutes from "./routes/notifications.routes.js";
+import savedSearchRoutes from "./routes/saved-search.routes.js";
+import { requireAuth } from "./middlewares/auth.middleware.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
+import { env } from "./config/env.js";
 
 const app = express();
 
-app.use(helmet());
-app.use(cors());
-app.use(morgan("dev"));
-app.use(express.json());
+if (env.trustProxy) {
+	app.set("trust proxy", 1);
+}
 
+app.use(helmet());
+// app.use(
+// 	cors({
+// 		origin: env.cors.origins,
+// 		credentials: true
+// 	})
+// );
+
+
+app.use(
+	cors({
+		origin: ["http://localhost:4000"], // your frontend origin
+		credentials: true,
+		methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+		allowedHeaders: ["Content-Type", "Authorization"],
+	}),
+);
+app.use(morgan(env.nodeEnv === "production" ? "combined" : "dev"));
+app.use(express.json());
+if (env.storage?.driver === "local") {
+	app.use(env.storage.local.baseUrl, express.static(env.storage.local.baseDir));
+}
+
+const setupBullBoard = async () => {
+	if (process.env.NODE_ENV === "production") return;
+
+	const { createBullBoard } = await import("@bull-board/api");
+	const { BullMQAdapter } = await import("@bull-board/api/bullMQAdapter");
+	const { ExpressAdapter } = await import("@bull-board/express");
+	const { emailQueue } = await import("./queues/email.queue.js");
+
+	const serverAdapter = new ExpressAdapter();
+	serverAdapter.setBasePath("/admin/queues");
+
+	createBullBoard({
+		queues: [new BullMQAdapter(emailQueue)],
+		serverAdapter
+	});
+
+	app.use("/admin/queues", serverAdapter.getRouter());
+};
+
+void setupBullBoard();
+
+if (env.nodeEnv !== "production") {
+	const ymlPath = path.resolve(process.cwd(), "cycup-api.yml");
+	const yamlPath = path.resolve(process.cwd(), "cycup-api.yaml");
+	const specPath = fs.existsSync(ymlPath) ? ymlPath : yamlPath;
+	let swaggerSpec = null;
+
+	try {
+		const yamlText = fs.readFileSync(specPath, "utf8");
+		swaggerSpec = parseYaml(yamlText);
+	} catch (error) {
+		console.error("Failed to load cycup-api.yml/.yaml", error);
+	}
+
+	if (swaggerSpec) {
+		app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+	} else {
+		app.get("/api/docs", (req, res) => {
+			res.status(404).json({ message: "Swagger spec not found." });
+		});
+	}
+}
+
+app.use("/api", requireAuth);
+app.use("/api", dashboardRoutes);
 app.use("/api", healthRoutes);
+app.use("/api", authRoutes);
+app.use("/api", profileRoutes);
+app.use("/api", categoriesRoutes);
+app.use("/api", citiesRoutes);
+app.use("/api", itemsRoutes);
+app.use("/api", adminRoutes);
+app.use("/api", chatRoutes);
+app.use("/api/items/:itemId/ratings", ratingsRoutes);
+app.use("/api", notificationsRoutes);
+app.use("/api", savedSearchRoutes);
 
 app.use(errorHandler);
+
+
 
 export default app;

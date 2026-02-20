@@ -1,21 +1,22 @@
-import pg from "pg";
+// noinspection NpmUsedModulesInstalled,JSUnresolvedReference
+
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "@prisma/client";
 import { env } from "../config/env.js";
 
-const { Pool } = pg;
+const adapter = new PrismaPg({ connectionString: env.db.url });
+const prisma = new PrismaClient({ adapter });
 
-export const pool = new Pool({
-    host: env.db.host,
-    port: env.db.port,
-    user: env.db.user,
-    password: env.db.password,
-    database: env.db.database
-});
-
+export { prisma }
+/**
+ * Checks database connectivity
+ */
 export const checkDbConnection = async () => {
-    const client = await pool.connect();
     try {
-        await client.query("SELECT 1");
-    } finally {
-        client.release();
+        await prisma.$queryRaw`SELECT 1`;
+        console.log('Database connection successful');
+    } catch (error) {
+        console.error('Database connection failed:', error);
+        throw error;
     }
 };

@@ -2,3 +2,7 @@ node_modules
 .env
 .idea
 .idea/*
+/uploads
+/uploads/*
+/logs
+/logs/*

@@ -1,0 +1,281 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────
+
+enum ItemCondition {
+  new
+  used
+}
+
+enum ItemType {
+  selling
+  giveaway
+  lending
+}
+
+enum RentUnit {
+  hour
+  day
+  week
+  month
+}
+
+enum ItemStatus {
+  published
+  deleted
+  sold
+  expired
+}
+
+enum NotificationType {
+  saved_search_match
+  rating_received
+  item_status_change
+}
+
+enum ReportStatus {
+  pending
+  reviewed
+  resolved
+}
+
+// ─────────────────────────────────────────────────────────────
+// MODELS
+// ─────────────────────────────────────────────────────────────
+
+model City {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  users User[]
+  items Item[]
+
+  @@map("cities")
+}
+
+model User {
+  id              String   @id @default(uuid()) @db.Uuid
+  email           String   @unique @db.VarChar(255)
+  username        String?  @unique @db.VarChar(50)
+  passwordHash    String   @map("password_hash") @db.VarChar(255)
+  firstName       String?  @map("first_name") @db.VarChar(100)
+  familyName      String?  @map("family_name") @db.VarChar(100)
+  address         String?  @db.VarChar(255)
+  postalCode      String?  @map("postal_code") @db.VarChar(20)
+  cityId          String?  @map("city_id") @db.Uuid
+  phoneNumber     String?  @map("phone_number") @db.VarChar(50)
+  profileImageUrl String?  @map("profile_image_url")
+  isVerified      Boolean  @default(false) @map("is_verified")
+  isAdmin         Boolean  @default(false) @map("is_admin")
+  isBlocked       Boolean  @default(false) @map("is_blocked")
+  blockReason     String?  @map("block_reason")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
+
+  city                City?               @relation(fields: [cityId], references: [id])
+  verificationPin     VerificationPin?
+  passwordResetTokens PasswordResetToken[]
+  sessions            Session[]
+  ownedItems          Item[]              @relation("ItemOwner")
+  boughtItems         Item[]              @relation("ItemBuyer")
+  ratingsGiven        Rating[]            @relation("Rater")
+  ratingsReceived     Rating[]            @relation("Seller")
+  notifications       Notification[]
+  savedSearches       SavedSearch[]
+  reportsSubmitted    Report[]            @relation("Reporter")
+  reportsReceived     Report[]            @relation("ReportedUser")
+
+  @@map("users")
+}
+
+model VerificationPin {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @unique @map("user_id") @db.Uuid
+  pinCode   String   @map("pin_code") @db.VarChar(10)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("verification_pins")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  token     String   @unique @db.VarChar(255)
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
+}
+
+model Session {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  sessionToken String   @unique @map("session_token") @db.VarChar(255)
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Category {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique @db.VarChar(100)
+  parentId  String?  @map("parent_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  parent   Category? @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children Category[] @relation("CategoryHierarchy")
+  items    Item[]
+
+  @@index([parentId])
+  @@map("categories")
+}
+
+model Item {
+  id                String        @id @default(uuid()) @db.Uuid
+  ownerId           String        @map("owner_id") @db.Uuid
+  title             String        @db.VarChar(100)
+  categoryId        String        @map("category_id") @db.Uuid
+  brandName         String?       @map("brand_name") @db.VarChar(100)
+  condition         ItemCondition
+  description       String
+  address           String        @db.VarChar(255)
+  cityId            String        @map("city_id") @db.Uuid
+  itemType          ItemType      @map("item_type")
+  sellingPrice      Decimal?      @map("selling_price") @db.Decimal(10, 2)
+  lendingPrice      Decimal?      @map("lending_price") @db.Decimal(10, 2)
+  rentUnit          RentUnit?     @map("rent_unit")
+  status            ItemStatus    @default(published)
+  buyerId           String?       @map("buyer_id") @db.Uuid
+  soldAt            DateTime?     @map("sold_at")
+  isDisabledByAdmin Boolean       @default(false) @map("is_disabled_by_admin")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @default(now()) @updatedAt @map("updated_at")
+
+  owner  User       @relation("ItemOwner", fields: [ownerId], references: [id])
+  buyer  User?      @relation("ItemBuyer", fields: [buyerId], references: [id])
+  city   City       @relation(fields: [cityId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
+  photos ItemPhoto[]
+  ratings Rating[]
+
+  @@index([ownerId])
+  @@index([categoryId])
+  @@index([cityId])
+  @@index([status])
+  @@index([itemType])
+  @@index([createdAt(sort: Desc)])
+  @@index([buyerId])
+  @@map("items")
+}
+
+model ItemPhoto {
+  id           String   @id @default(uuid()) @db.Uuid
+  itemId       String   @map("item_id") @db.Uuid
+  photoUrl     String   @map("photo_url")
+  isMain       Boolean  @default(false) @map("is_main")
+  displayOrder Int?     @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
+  @@map("item_photos")
+}
+
+model Rating {
+  id        String   @id @default(uuid()) @db.Uuid
+  itemId    String   @map("item_id") @db.Uuid
+  sellerId  String   @map("seller_id") @db.Uuid
+  raterId   String   @map("rater_id") @db.Uuid
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  item   Item @relation(fields: [itemId], references: [id])
+  seller User @relation("Seller", fields: [sellerId], references: [id])
+  rater  User @relation("Rater", fields: [raterId], references: [id])
+
+  @@unique([itemId, raterId])
+  @@index([sellerId])
+  @@index([itemId])
+  @@index([raterId])
+  @@map("ratings")
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  type      NotificationType
+  title     String           @db.VarChar(255)
+  message   String
+  isRead    Boolean          @default(false) @map("is_read")
+  metadata  Json?
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+model SavedSearch {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  emailEnabled Boolean  @default(false) @map("email_enabled")
+  inAppEnabled Boolean  @default(false) @map("in_app_enabled")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  terms SavedSearchTerm[]
+
+  @@index([userId])
+  @@map("saved_searches")
+}
+
+model SavedSearchTerm {
+  id            String   @id @default(uuid()) @db.Uuid
+  savedSearchId String   @map("saved_search_id") @db.Uuid
+  searchTerm    String   @map("search_term") @db.VarChar(255)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  savedSearch SavedSearch @relation(fields: [savedSearchId], references: [id], onDelete: Cascade)
+
+  @@map("saved_search_terms")
+}
+
+model Report {
+  id             String       @id @default(uuid()) @db.Uuid
+  reporterId     String       @map("reporter_id") @db.Uuid
+  reportedUserId String?      @map("reported_user_id") @db.Uuid
+  description    String
+  status         ReportStatus @default(pending)
+  adminNotes     String?      @map("admin_notes")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @default(now()) @updatedAt @map("updated_at")
+
+  reporter     User  @relation("Reporter", fields: [reporterId], references: [id])
+  reportedUser User? @relation("ReportedUser", fields: [reportedUserId], references: [id])
+
+  @@map("reports")
+}

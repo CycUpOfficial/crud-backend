@@ -1,0 +1,2432 @@
+openapi: 3.0.3
+info:
+  title: CyCup API
+  description: API specification for CyCup - A university marketplace platform for buying, selling, renting, and giving away items
+  version: 1.0.0
+  contact:
+    name: CyCup Support
+    email: support@cycup.com
+
+servers:
+  - url: http://localhost:8000/api
+    description: Local dev server
+
+tags:
+  - name: Authentication
+    description: User authentication and account management
+  - name: Users
+    description: User profile and information management
+  - name: Items
+    description: Item posting, searching, and management
+  - name: Dashboard
+    description: User dashboard and analytics
+  - name: Ratings
+    description: User rating and review system
+  - name: Notifications
+    description: Notification and saved search management
+  - name: Chat
+    description: Real-time chat over Socket.IO
+  - name: Admin
+    description: Administrative functions
+
+paths:
+  # ============================================
+  # Authentication Endpoints
+  # ============================================
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      description: Register a new user with university email. User will receive a PIN code via email for verification. Password will be set during the verification step.
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: University email address
+                  example: student@university.edu
+      responses:
+        '201':
+          description: User registered successfully. Verification PIN sent to email.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Registration successful. Please check your email for verification PIN.
+                  userId:
+                    type: integer
+                    example: 123
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Error message
+              examples:
+                invalidEmailFormat:
+                  summary: Invalid Email Format
+                  value:
+                    message: "Invalid email format. Please provide a valid email address."
+                notUniversityEmail:
+                  summary: Not a University Email
+                  value:
+                    message: "Email must be a valid university email address."
+                userExists:
+                  summary: User Already Exists
+                  value:
+                    message: "A user with this email already exists."
+        '500':
+          description: Internal server error
+
+  /auth/verify:
+    post:
+      tags:
+        - Authentication
+      summary: Verify user email and set password
+      description: Verify user email using the PIN code sent to their email address and set the user's password. Both passwords must match.
+      operationId: verifyUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - pinCode
+                - password
+                - passwordConfirmation
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: student@university.edu
+                pinCode:
+                  type: string
+                  description: PIN code received via email
+                  example: "123456"
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  description: User password to be set during verification
+                  example: SecurePass123!
+                passwordConfirmation:
+                  type: string
+                  format: password
+                  minLength: 8
+                  description: Password confirmation - must match the password field
+                  example: SecurePass123!
+      responses:
+        '200':
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Email verified successfully
+                  verified:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Error message
+              examples:
+                passwordsMismatch:
+                  summary: Passwords Do Not Match
+                  value:
+                    message: "Passwords do not match. Please ensure both password fields are identical."
+                invalidPinCode:
+                  summary: Invalid PIN Code
+                  value:
+                    message: "Invalid PIN code. Please check your email and try again."
+                invalidEmail:
+                  summary: Invalid Email
+                  value:
+                    message: "Invalid email address."
+                passwordTooShort:
+                  summary: Password Too Short
+                  value:
+                    message: "Password must be at least 8 characters long."
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not found."
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user and create a session
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: student@university.edu
+                password:
+                  type: string
+                  format: password
+                  example: SecurePass123!
+      responses:
+        '200':
+          description: Login successful
+          headers:
+            Set-Cookie:
+              description: Session cookie
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: integer
+                    description: ID of the authenticated user
+                    example: 123
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Error message
+              examples:
+                invalidCredentials:
+                  summary: Invalid Credentials
+                  value:
+                    message: "Invalid email or password. Please check your credentials and try again."
+        '403':
+          description: Email not verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Error message
+              examples:
+                emailNotVerified:
+                  summary: Email Not Verified
+                  value:
+                    message: "Email address has not been verified. Please check your email for the verification PIN."
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      description: End user session
+      operationId: logoutUser
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Logout successful
+
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user
+      description: Returns the authenticated user's basic information
+      operationId: getCurrentUser
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Current user info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 123
+                  email:
+                    type: string
+                    format: email
+                    example: student@university.edu
+                  username:
+                    type: string
+                    example: student123
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Not authorized to take this action.
+
+  /auth/password/reset:
+    post:
+      tags:
+        - Authentication
+      summary: Request password reset
+      description: Request a password reset link to be sent to user's email
+      operationId: requestPasswordReset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: student@university.edu
+      responses:
+        '200':
+          description: Password reset link sent to email
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Password reset link has been sent to your email
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not found."
+
+  /auth/password/reset/confirm:
+    post:
+      tags:
+        - Authentication
+      summary: Confirm password reset
+      description: Reset password using the token from email link. Token should be extracted from the email link and sent in the request body for security.
+      operationId: confirmPasswordReset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - newPassword
+                - passwordConfirmation
+              properties:
+                token:
+                  type: string
+                  description: Reset token from email link
+                  example: "abc123def456ghi789"
+                newPassword:
+                  type: string
+                  format: password
+                  minLength: 8
+                  description: New password to be set
+                  example: NewSecurePass123!
+                passwordConfirmation:
+                  type: string
+                  format: password
+                  minLength: 8
+                  description: Password confirmation - must match the newPassword field
+                  example: NewSecurePass123!
+      responses:
+        '200':
+          description: Password reset successful
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Error message
+              examples:
+                passwordsMismatch:
+                  summary: Passwords Do Not Match
+                  value:
+                    message: "Passwords do not match. Please ensure both password fields are identical."
+                invalidToken:
+                  summary: Invalid or Expired Token
+                  value:
+                    message: "Invalid or expired reset token. Please request a new password reset link."
+                passwordTooShort:
+                  summary: Password Too Short
+                  value:
+                    message: "Password must be at least 8 characters long."
+
+  # ============================================
+  # Chat (Socket.IO) Endpoints
+  # ============================================
+  /socket.io:
+    get:
+      tags:
+        - Chat
+      summary: Socket.IO connection
+      description: |
+        Real-time chat uses Socket.IO over the existing session cookie.
+        The client must send the session cookie during the Socket.IO handshake.
+
+        Client events:
+        - chat:start { itemId, otherUserId }
+        - chat:list { page, limit }
+        - chat:messages { chatId, limit, before }
+        - message:send { chatId, text, file }
+
+        Server events:
+        - chat:started (chat)
+        - message:new (message)
+
+        All events respond with an ack: { ok: true, ... } or { ok: false, error }.
+      responses:
+        '101':
+          description: Switching Protocols (WebSocket upgrade)
+
+  # ============================================
+  # User Profile Endpoints
+  # ============================================
+  /users/profile:
+    get:
+      tags:
+        - Users
+      summary: Get current user profile
+      description: Retrieve the authenticated user's profile information
+      operationId: getCurrentUserProfile
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+
+    put:
+      tags:
+        - Users
+      summary: Complete or update user profile
+      description: Complete user information after verification or update existing profile
+      operationId: updateUserProfile
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - firstName
+                - familyName
+                - address
+                - postalCode
+                - city
+                - phoneNumber
+              properties:
+                firstName:
+                  type: string
+                  example: John
+                familyName:
+                  type: string
+                  example: Doe
+                address:
+                  type: string
+                  example: "123 Main Street"
+                postalCode:
+                  type: string
+                  example: "12345"
+                city:
+                  type: string
+                  example: "Berlin"
+                phoneNumber:
+                  type: string
+                  example: "+491234567890"
+                profileImage:
+                  type: string
+                  format: uri
+                  description: URL to profile image (optional)
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+
+  # ============================================
+  # Reference Data Endpoints
+  # ============================================
+  /categories:
+    get:
+      tags:
+        - Items
+      summary: Get list of categories
+      description: Retrieve all available item categories
+      operationId: getCategories
+      responses:
+        '200':
+          description: Categories retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  categories:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        name:
+                          type: string
+                          example: "Electronics"
+
+  /cities:
+    get:
+      tags:
+        - Items
+      summary: Get list of cities
+      description: Retrieve all available cities where items can be posted
+      operationId: getCities
+      responses:
+        '200':
+          description: Cities retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cities:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        name:
+                          type: string
+                          example: "Berlin"
+
+  # ============================================
+  # Items Endpoints
+  # ============================================
+  /items:
+    post:
+      tags:
+        - Items
+      summary: Create a new item
+      description: Post a new item for selling, lending, or giveaway
+      operationId: createItem
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - title
+                - categoryId
+                - brandName
+                - condition
+                - description
+                - address
+                - cityId
+                - itemType
+              properties:
+                title:
+                  type: string
+                  maxLength: 100
+                  description: Item title (maximum 100 characters, approximately 10-15 words)
+                  example: "MacBook Pro 13 inch"
+                categoryId:
+                  type: integer
+                  description: Category ID from /categories endpoint
+                  example: 1
+                brandName:
+                  type: string
+                  example: "Apple"
+                condition:
+                  $ref: '#/components/schemas/Condition'
+                description:
+                  type: string
+                  maxLength: 1000
+                  description: Item description (maximum 1000 characters, should be longer than title)
+                  example: "Good condition, used for 2 years. No scratches, works perfectly. Original charger included."
+                address:
+                  type: string
+                  example: "123 Main Street"
+                cityId:
+                  type: integer
+                  description: City ID from /cities endpoint
+                  example: 1
+                itemType:
+                  $ref: '#/components/schemas/ItemType'
+                sellingPrice:
+                  type: number
+                  format: float
+                  description: Selling price in Euros (required for selling itemType)
+                  example: 500.00
+                lendingPrice:
+                  type: number
+                  format: float
+                  description: Lending price in Euros (required for lending itemType)
+                  example: 50.00
+                rentUnit:
+                  type: string
+                  enum: [hour, day, week, month]
+                  description: Rental unit (required for lending itemType)
+                  example: "month"
+                photos:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  maxItems: 3
+                  description: Maximum 3 photos
+                mainPhotoIndex:
+                  type: integer
+                  minimum: 0
+                  maximum: 2
+                  description: Index of the main photo in the photos array (0-2)
+                  example: 0
+      responses:
+        '201':
+          description: Item created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+
+    get:
+      tags:
+        - Items
+      summary: Search and filter items
+      description: Get a list of items with optional search, filter, and sort parameters
+      operationId: searchItems
+      parameters:
+        - name: search
+          in: query
+          description: Text search query
+          schema:
+            type: string
+          example: "laptop"
+        - name: city
+          in: query
+          description: Filter by city
+          schema:
+            type: string
+          example: "Berlin"
+        - name: itemType
+          in: query
+          description: Filter by item type
+          schema:
+            $ref: '#/components/schemas/ItemType'
+          example: "selling"
+        - name: condition
+          in: query
+          description: Filter by condition
+          schema:
+            $ref: '#/components/schemas/Condition'
+          example: "used"
+        - name: minPrice
+          in: query
+          description: Minimum price filter
+          schema:
+            type: number
+            format: float
+          example: 100.00
+        - name: maxPrice
+          in: query
+          description: Maximum price filter
+          schema:
+            type: number
+            format: float
+          example: 1000.00
+        - name: sortBy
+          in: query
+          description: Sort field
+          schema:
+            type: string
+            enum: [price, date]
+            default: date
+          example: "price"
+        - name: sortOrder
+          in: query
+          description: Sort order
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+          example: "asc"
+        - name: page
+          in: query
+          description: Page number
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: limit
+          in: query
+          description: Items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: List of items retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ItemSummary'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+
+  /items/{itemId}:
+    get:
+      tags:
+        - Items
+      summary: Get item details
+      description: Get detailed information about a specific item including owner information
+      operationId: getItemById
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Item details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemDetail'
+        '404':
+          description: Item not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not found."
+
+    put:
+      tags:
+        - Items
+      summary: Update an item
+      description: Update an existing item that belongs to the authenticated user
+      operationId: updateItem
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  maxLength: 100
+                  description: Item title (maximum 100 characters)
+                categoryId:
+                  type: integer
+                  description: Category ID from /categories endpoint
+                brandName:
+                  type: string
+                condition:
+                  $ref: '#/components/schemas/Condition'
+                description:
+                  type: string
+                  maxLength: 1000
+                  description: Item description (maximum 1000 characters)
+                address:
+                  type: string
+                cityId:
+                  type: integer
+                  description: City ID from /cities endpoint
+                itemType:
+                  $ref: '#/components/schemas/ItemType'
+                sellingPrice:
+                  type: number
+                  format: float
+                  description: Selling price in Euros (required for selling itemType)
+                lendingPrice:
+                  type: number
+                  format: float
+                  description: Lending price in Euros (required for lending itemType)
+                rentUnit:
+                  type: string
+                  enum: [hour, day, week, month]
+                  description: Rental unit (required for lending itemType)
+                photos:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  maxItems: 3
+                  description: Maximum 3 photos
+                mainPhotoIndex:
+                  type: integer
+                  minimum: 0
+                  maximum: 2
+                  description: Index of the main photo in the photos array (0-2)
+                  example: 0
+      responses:
+        '200':
+          description: Item updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+        '403':
+          description: Not authorized to update this item
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+        '404':
+          description: Item not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not found."
+
+    delete:
+      tags:
+        - Items
+      summary: Delete an item
+      description: Soft delete an item (hides it from all users but keeps it in the system)
+      operationId: deleteItem
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Item deleted (hidden) successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Item deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+        '403':
+          description: Not authorized to delete this item
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+        '404':
+          description: Item not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not found."
+
+  /items/{itemId}/mark-sold:
+    post:
+      tags:
+        - Items
+      summary: Mark item as sold
+      description: Mark an item as sold and specify the buyer
+      operationId: markItemAsSold
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - buyerEmail
+              properties:
+                buyerEmail:
+                  type: string
+                  format: email
+                  description: Email of the buyer (required)
+                  example: "buyer@university.edu"
+      responses:
+        '200':
+          description: Item marked as sold successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Error message
+              examples:
+                invalidEmail:
+                  summary: Invalid Email Format
+                  value:
+                    message: "Invalid buyer email format. Please provide a valid email address."
+                buyerNotFound:
+                  summary: Buyer Not Found
+                  value:
+                    message: "Buyer with this email address not found in the system."
+                itemAlreadySold:
+                  summary: Item Already Sold
+                  value:
+                    message: "This item has already been marked as sold."
+                cannotSelfPurchase:
+                  summary: Cannot Mark Self as Buyer
+                  value:
+                    message: "You cannot mark yourself as the buyer of your own item."
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+        '403':
+          description: Not authorized to update this item
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+        '404':
+          description: Item not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not found."
+
+  # ============================================
+  # Dashboard Endpoints
+  # ============================================
+  /dashboard/analytics:
+    get:
+      tags:
+        - Dashboard
+      summary: Get user analytics
+      description: Get analytical information about user's items (total posted, sold, given away)
+      operationId: getUserAnalytics
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Analytics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalPosted:
+                    type: integer
+                    example: 25
+                  totalSold:
+                    type: integer
+                    example: 15
+                  totalGivenAway:
+                    type: integer
+                    example: 5
+                  totalRented:
+                    type: integer
+                    example: 3
+                  activeItems:
+                    type: integer
+                    example: 2
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+
+  /dashboard/items:
+    get:
+      tags:
+        - Dashboard
+      summary: Get user's items
+      description: Get all items posted by the authenticated user (including published, deleted, and expired)
+      operationId: getUserItems
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: status
+          in: query
+          description: Filter by item status
+          schema:
+            type: string
+            enum: [published, deleted, expired, sold]
+          example: "published"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: User items retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Item'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+
+  /dashboard/ratings:
+    get:
+      tags:
+        - Dashboard
+      summary: Get user ratings and comments
+      description: Get overall rating and all comments received by the authenticated user
+      operationId: getUserRatings
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Ratings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  overallRating:
+                    type: number
+                    format: float
+                    minimum: 1
+                    maximum: 5
+                    example: 4.5
+                  totalRatings:
+                    type: integer
+                    example: 20
+                  ratings:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Rating'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+
+  # ============================================
+  # Ratings Endpoints
+  # ============================================
+  /items/{itemId}/ratings:
+    post:
+      tags:
+        - Ratings
+      summary: Rate a seller
+      description: Rate and comment on a seller after purchasing/renting an item. Only works between seller and buyer of the item.
+      operationId: rateSeller
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - rating
+              properties:
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  description: Rating from 1 to 5
+                  example: 5
+                comment:
+                  type: string
+                  description: Text comment (optional)
+                  example: "Great seller, item as described!"
+      responses:
+        '201':
+          description: Rating submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rating'
+        '400':
+          description: Invalid input or not authorized to rate
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Error message
+              examples:
+                invalidRating:
+                  summary: Invalid Rating Value
+                  value:
+                    message: "Rating must be between 1 and 5."
+                notBuyer:
+                  summary: Not Authorized to Rate
+                  value:
+                    message: "You are not authorized to rate this seller. Only the buyer can rate."
+                alreadyRated:
+                  summary: Already Rated
+                  value:
+                    message: "You have already rated this seller for this item."
+                itemNotSold:
+                  summary: Item Not Sold Yet
+                  value:
+                    message: "Cannot rate seller. The item has not been marked as sold yet."
+                cannotRateSelf:
+                  summary: Cannot Rate Yourself
+                  value:
+                    message: "You cannot rate yourself."
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+        '404':
+          description: Item not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not found."
+
+  # ============================================
+  # Notifications Endpoints
+  # ============================================
+  /notifications:
+    get:
+      tags:
+        - Notifications
+      summary: Get user notifications
+      description: Get all notifications for the authenticated user
+      operationId: getNotifications
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: unreadOnly
+          in: query
+          description: Return only unread notifications
+          schema:
+            type: boolean
+            default: false
+          example: true
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: Notifications retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  notifications:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notification'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+
+  /notifications/{notificationId}/read:
+    put:
+      tags:
+        - Notifications
+      summary: Mark notification as read
+      description: Mark a notification as read
+      operationId: markNotificationAsRead
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Notification marked as read
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+        '404':
+          description: Notification not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not found."
+
+  /saved-searches:
+    post:
+      tags:
+        - Notifications
+      summary: Create a saved search
+      description: Create a saved search that will trigger notifications when matching items are found. By default, no notifications are enabled.
+      operationId: createSavedSearch
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - searchTerms
+              properties:
+                searchTerms:
+                  type: array
+                  items:
+                    type: string
+                  description: List of search terms based on user interests
+                  example: ["laptop", "macbook", "electronics"]
+                email:
+                  type: boolean
+                  default: false
+                  description: Enable email notifications (default is false)
+                  example: true
+                in_app:
+                  type: boolean
+                  default: false
+                  description: Enable in-app notifications (default is false)
+                  example: true
+      responses:
+        '201':
+          description: Saved search created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedSearch'
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+
+    get:
+      tags:
+        - Notifications
+      summary: Get saved searches
+      description: Get all saved searches for the authenticated user
+      operationId: getSavedSearches
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Saved searches retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  savedSearches:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SavedSearch'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+
+  /saved-searches/{searchId}:
+    put:
+      tags:
+        - Notifications
+      summary: Update saved search notifications
+      description: Update notification settings for a saved search (disable/enable email or in-app notifications)
+      operationId: updateSavedSearch
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: searchId
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: boolean
+                  description: Enable/disable email notifications
+                  example: false
+                in_app:
+                  type: boolean
+                  description: Enable/disable in-app notifications
+                  example: false
+      responses:
+        '200':
+          description: Saved search updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedSearch'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invalid input."
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+        '404':
+          description: Saved search not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not found."
+
+    delete:
+      tags:
+        - Notifications
+      summary: Delete a saved search
+      description: Delete a saved search
+      operationId: deleteSavedSearch
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: searchId
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Saved search deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+        '404':
+          description: Saved search not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not found."
+
+  # ============================================
+  # Admin Endpoints
+  # ============================================
+  /admin/analytics:
+    get:
+      tags:
+        - Admin
+      summary: Get system analytics
+      description: Get general analytical information about the system (donations, sales, rents)
+      operationId: getSystemAnalytics
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Analytics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalDonations:
+                    type: integer
+                    example: 150
+                  totalSales:
+                    type: integer
+                    example: 500
+                  totalRents:
+                    type: integer
+                    example: 200
+                  totalUsers:
+                    type: integer
+                    example: 1000
+                  totalItems:
+                    type: integer
+                    example: 850
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+  /admin/items/{itemId}/disable:
+    post:
+      tags:
+        - Admin
+      summary: Disable an item
+      description: Disable an item post (hide it from users)
+      operationId: disableItem
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Item disabled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Item disabled successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+        '404':
+          description: Item not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not found."
+
+  /admin/items/{itemId}/remove:
+    delete:
+      tags:
+        - Admin
+      summary: Remove an item
+      description: Permanently remove an item from the system
+      operationId: removeItem
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Item removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Item removed successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+        '404':
+          description: Item not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not found."
+
+  /admin/users:
+    get:
+      tags:
+        - Admin
+      summary: Get users list
+      description: Get list of users for management
+      operationId: getUsers
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: search
+          in: query
+          description: Search by email or name
+          schema:
+            type: string
+          example: "john"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+
+  /admin/users/{userId}/block:
+    post:
+      tags:
+        - Admin
+      summary: Block user from posting
+      description: Block a user from posting new items
+      operationId: blockUser
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: Reason for blocking
+                  example: "Violation of terms of service"
+      responses:
+        '200':
+          description: User blocked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: User blocked successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not found."
+
+  /admin/users/{userId}/unblock:
+    post:
+      tags:
+        - Admin
+      summary: Unblock user
+      description: Unblock a user, allowing them to post again
+      operationId: unblockUser
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: User unblocked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: User unblocked successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not found."
+
+  /admin/reports:
+    get:
+      tags:
+        - Admin
+      summary: Get user reports
+      description: Get all reports submitted by users, optionally filtered by date
+      operationId: getReports
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          description: Filter reports from this date
+          schema:
+            type: string
+            format: date
+          example: "2024-01-01"
+        - name: endDate
+          in: query
+          description: Filter reports until this date
+          schema:
+            type: string
+            format: date
+          example: "2024-12-31"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+      responses:
+        '200':
+          description: Reports retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reports:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Report'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+
+  /reports:
+    post:
+      tags:
+        - Admin
+      summary: Submit a report
+      description: Submit a report about an item, user, or other matter
+      operationId: submitReport
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+                - description
+              properties:
+                userId:
+                  type: integer
+                  description: ID of reported user (if type is 'user')
+                  example: 2
+                description:
+                  type: string
+                  description: Description of the issue
+                  example: "This item violates the terms of service"
+      responses:
+        '201':
+          description: Report submitted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Report submitted successfully
+                  reportId:
+                    type: integer
+                    example: 1
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Not authorized to take this action."
+
+components:
+  securitySchemes:
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: session
+      description: Session-based authentication using cookies
+
+  schemas:
+    Condition:
+      type: string
+      enum: [new, used]
+      description: Item condition
+      example: "used"
+
+    ItemType:
+      type: string
+      enum: [selling, giveaway, lending]
+      description: Type of item listing
+      example: "selling"
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        email:
+          type: string
+          format: email
+          example: "student@university.edu"
+        firstName:
+          type: string
+          example: "John"
+        familyName:
+          type: string
+          example: "Doe"
+        address:
+          type: string
+          example: "123 Main Street"
+        postalCode:
+          type: string
+          example: "12345"
+        city:
+          type: string
+          example: "Berlin"
+        phoneNumber:
+          type: string
+          example: "+491234567890"
+        profileImage:
+          type: string
+          format: uri
+          nullable: true
+          example: "https://example.com/profile.jpg"
+        verified:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    Item:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          maxLength: 100
+          example: "MacBook Pro 13 inch"
+        categoryId:
+          type: integer
+          description: Category ID
+          example: 1
+        category:
+          type: string
+          description: Category name (for display)
+          example: "Electronics"
+        brandName:
+          type: string
+          example: "Apple"
+        condition:
+          $ref: '#/components/schemas/Condition'
+        description:
+          type: string
+          maxLength: 1000
+          example: "Good condition, used for 2 years. No scratches, works perfectly."
+        address:
+          type: string
+          example: "123 Main Street"
+        cityId:
+          type: integer
+          description: City ID
+          example: 1
+        city:
+          type: string
+          description: City name (for display)
+          example: "Berlin"
+        itemType:
+          $ref: '#/components/schemas/ItemType'
+        sellingPrice:
+          type: number
+          format: float
+          nullable: true
+          description: Selling price in Euros (for selling itemType)
+          example: 500.00
+        lendingPrice:
+          type: number
+          format: float
+          nullable: true
+          description: Lending price in Euros (for lending itemType)
+          example: 50.00
+        rentUnit:
+          type: string
+          enum: [hour, day, week, month]
+          nullable: true
+          description: Rental unit (for lending itemType)
+          example: "month"
+        photos:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+                format: uri
+                example: "https://example.com/photo1.jpg"
+              isMain:
+                type: boolean
+                description: Whether this photo is the main photo
+                example: true
+        status:
+          type: string
+          enum: [published, deleted, sold, expired]
+          example: "published"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    ItemSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          maxLength: 100
+          example: "MacBook Pro 13 inch"
+        mainImage:
+          type: string
+          format: uri
+          description: URL of the main photo
+          example: "https://example.com/photo1.jpg"
+        sellingPrice:
+          type: number
+          format: float
+          nullable: true
+          description: Selling price in Euros (for selling itemType)
+          example: 500.00
+        lendingPrice:
+          type: number
+          format: float
+          nullable: true
+          description: Lending price in Euros (for lending itemType)
+          example: 50.00
+        itemType:
+          $ref: '#/components/schemas/ItemType'
+        rentUnit:
+          type: string
+          enum: [hour, day, week, month]
+          nullable: true
+          description: Rental unit (for lending itemType)
+          example: "month"
+        city:
+          type: string
+          example: "Berlin"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    ItemDetail:
+      allOf:
+        - $ref: '#/components/schemas/Item'
+        - type: object
+          properties:
+            owner:
+              type: object
+              properties:
+                id:
+                  type: integer
+                  example: 1
+                firstName:
+                  type: string
+                  example: "John"
+                familyName:
+                  type: string
+                  example: "Doe"
+                email:
+                  type: string
+                  format: email
+                  example: "seller@university.edu"
+
+    Rating:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        itemId:
+          type: integer
+          example: 1
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 5
+        comment:
+          type: string
+          nullable: true
+          example: "Great seller, item as described!"
+        raterId:
+          type: integer
+          example: 2
+        raterName:
+          type: string
+          example: "Jane Smith"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        type:
+          type: string
+          enum: [saved_search_match, rating_received, item_status_change]
+          example: "saved_search_match"
+        title:
+          type: string
+          example: "New items match your saved search"
+        message:
+          type: string
+          example: "3 new items found matching 'laptop macbook'"
+        read:
+          type: boolean
+          example: false
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        metadata:
+          type: object
+          description: Additional data related to the notification
+          nullable: true
+
+    SavedSearch:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        searchTerms:
+          type: array
+          items:
+            type: string
+          description: List of search terms
+          example: ["laptop", "macbook", "electronics"]
+        email:
+          type: boolean
+          description: Email notifications enabled
+          example: true
+        in_app:
+          type: boolean
+          description: In-app notifications enabled
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    Report:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+
+        description:
+          type: string
+          example: "This item violates the terms of service"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 100
+        totalPages:
+          type: integer
+          example: 5
+

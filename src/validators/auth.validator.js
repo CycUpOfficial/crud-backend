@@ -1,0 +1,86 @@
+import { z } from "zod";
+
+export const registerSchema = z.object({
+    body: z.object({
+        email: z
+            .email("Invalid email format. Please provide a valid email address.")
+    }),
+    params: z.object({}).optional(),
+    query: z.object({}).optional()
+});
+
+export const verifySchema = z.object({
+    body: z
+        .object({
+            email: z
+                .email("Invalid email address."),
+            pinCode: z
+                .string()
+                .min(1, "Invalid PIN code. Please check your email and try again."),
+            username: z
+                .string()
+                .min(3, "Username must be at least 3 characters long.")
+                .max(30, "Username must be at most 30 characters long.")
+                .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores."),
+            password: z
+                .string()
+                .min(8, "Password must be at least 8 characters long."),
+            passwordConfirmation: z
+                .string()
+                .min(8, "Password must be at least 8 characters long.")
+        })
+        .refine((data) => data.password === data.passwordConfirmation, {
+            message: "Passwords do not match. Please ensure both password fields are identical.",
+            path: ["passwordConfirmation"]
+        }),
+    params: z.object({}).optional(),
+    query: z.object({}).optional()
+});
+
+export const loginSchema = z.object({
+    body: z.object({
+        email: z
+            .email("Invalid email address."),
+        password: z
+            .string()
+            .min(1, "Invalid email or password. Please check your credentials and try again.")
+    }),
+    params: z.object({}).optional(),
+    query: z.object({}).optional()
+});
+
+export const logoutSchema = z.object({
+    body: z.object({}).optional(),
+    params: z.object({}).optional(),
+    query: z.object({}).optional()
+});
+
+export const requestPasswordResetSchema = z.object({
+    body: z.object({
+        email: z
+            .email("Invalid email address.")
+    }),
+    params: z.object({}).optional(),
+    query: z.object({}).optional()
+});
+
+export const confirmPasswordResetSchema = z.object({
+    body: z
+        .object({
+            token: z
+                .string()
+                .min(1, "Invalid or expired reset token. Please request a new password reset link."),
+            newPassword: z
+                .string()
+                .min(8, "Password must be at least 8 characters long."),
+            passwordConfirmation: z
+                .string()
+                .min(8, "Password must be at least 8 characters long.")
+        })
+        .refine((data) => data.newPassword === data.passwordConfirmation, {
+            message: "Passwords do not match. Please ensure both password fields are identical.",
+            path: ["passwordConfirmation"]
+        }),
+    params: z.object({}).optional(),
+    query: z.object({}).optional()
+});

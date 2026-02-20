@@ -1,0 +1,120 @@
+// noinspection JSUnresolvedReference
+
+import { prisma } from "../db/index.js";
+
+export const getUserByEmail = (email) =>
+    prisma.user.findUnique({ where: { email } });
+
+export const getUserById = (id) =>
+    prisma.user.findUnique({
+        where: { id },
+        select: {
+            id: true,
+            email: true,
+            username: true,
+            isVerified: true,
+            isBlocked: true
+        }
+    });
+
+export const getUserByUsername = (username) =>
+    prisma.user.findFirst({
+        where: {
+            username: { equals: username, mode: "insensitive" }
+        }
+    });
+
+export const getVerificationPinByUserId = (userId) =>
+    prisma.verificationPin.findUnique({ where: { userId } });
+
+export const createUserWithVerificationPin = (email, pinCode, expiresAt) =>
+    prisma.$transaction(async (tx) => {
+        const user = await tx.user.create({
+            data: {
+                email,
+                passwordHash: "PENDING"
+            }
+        });
+
+        await tx.verificationPin.create({
+            data: {
+                userId: user.id,
+                pinCode,
+                expiresAt
+            }
+        });
+
+        return user;
+    });
+
+export const verifyUserAndSetPassword = (userId, passwordHash, username) =>
+    prisma.$transaction(async (tx) => {
+        const user = await tx.user.update({
+            where: { id: userId },
+            data: { isVerified: true, passwordHash, username }
+        });
+
+        await tx.verificationPin.delete({
+            where: { userId }
+        });
+
+        return user;
+    });
+
+export const createSession = ({ userId, sessionToken, expiresAt }) =>
+    prisma.session.create({
+        data: {
+            userId,
+            sessionToken,
+            expiresAt
+        }
+    });
+
+export const deleteSessionByToken = (sessionToken) =>
+    prisma.session.deleteMany({
+        where: { sessionToken }
+    });
+
+export const deleteSessionsByUserId = (userId) =>
+    prisma.session.deleteMany({
+        where: { userId }
+    });
+
+export const getSessionByToken = (sessionToken) =>
+    prisma.session.findUnique({
+        where: { sessionToken }
+    });
+
+export const deletePasswordResetTokensByUserId = (userId) =>
+    prisma.passwordResetToken.deleteMany({
+        where: { userId }
+    });
+
+export const createPasswordResetToken = ({ userId, token, expiresAt }) =>
+    prisma.passwordResetToken.create({
+        data: {
+            userId,
+            token,
+            expiresAt
+        }
+    });
+
+export const getPasswordResetTokenRecord = (token) =>
+    prisma.passwordResetToken.findUnique({
+        where: { token }
+    });
+
+export const resetPasswordAndVerifyUser = ({ userId, passwordHash }) =>
+    prisma.$transaction(async (tx) => {
+        const user = await tx.user.update({
+            where: { id: userId },
+            data: { passwordHash, isVerified: true }
+        });
+
+        await tx.passwordResetToken.updateMany({
+            where: { userId },
+            data: { used: true }
+        });
+
+        return user;
+    });
