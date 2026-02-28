@@ -4,7 +4,7 @@ import { prisma } from "../db/index.js";
 
 const buildToken = () => crypto.randomBytes(16).toString("hex");
 
-const getOrCreateUser = async ({ email, username, isAdmin, isVerified, cityId }) =>
+const getOrCreateUser = async({ email, username, isAdmin, isVerified, cityId }) =>
     prisma.user.upsert({
         where: { email },
         update: {},
@@ -18,7 +18,36 @@ const getOrCreateUser = async ({ email, username, isAdmin, isVerified, cityId })
         }
     });
 
-export const seedFakeData = async () => {
+// call with { force: true } to clear existing fake records before inserting
+export const seedFakeData = async({ force = false } = {}) => {
+    if (force) {
+        console.info("force seed enabled - clearing previous fake data");
+        // delete in the correct order to satisfy FK constraints
+        await prisma.$transaction([
+            prisma.rating.deleteMany(),
+            prisma.notification.deleteMany(),
+            prisma.savedSearchTerm.deleteMany(),
+            prisma.savedSearch.deleteMany(),
+            prisma.report.deleteMany(),
+            prisma.itemPhoto.deleteMany(),
+            prisma.item.deleteMany(),
+            prisma.session.deleteMany(),
+            prisma.passwordResetToken.deleteMany(),
+            prisma.verificationPin.deleteMany(),
+            prisma.user.deleteMany({
+                where: {
+                    email: { in: [
+                            "admin@abo.fi",
+                            "seller@utu.fi",
+                            "buyer@abo.fi",
+                            "pending@utu.fi"
+                        ]
+                    }
+                }
+            })
+        ]);
+    }
+
     const [city, category] = await Promise.all([
         prisma.city.findFirst({ orderBy: { createdAt: "asc" } }),
         prisma.category.findFirst({ orderBy: { createdAt: "asc" } })
@@ -148,8 +177,7 @@ export const seedFakeData = async () => {
         });
 
         await prisma.itemPhoto.createMany({
-            data: [
-                {
+            data: [{
                     itemId: soldItem.id,
                     photoUrl: "https://example.com/photos/bike.jpg",
                     isMain: true,

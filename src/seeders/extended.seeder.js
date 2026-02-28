@@ -159,7 +159,35 @@ const NOTIFICATION_MESSAGES = [
     { type: "saved_search_match", title: "Search alert", message: "New item 'Coffee Maker' matches your saved search." },
 ];
 
-export const seedExtendedFakeData = async() => {
+export const seedExtendedFakeData = async({ force = false } = {}) => {
+    if (force) {
+        console.info("force extended seed - purging previous extended fake data");
+        await prisma.$transaction([
+            prisma.rating.deleteMany(),
+            prisma.notification.deleteMany(),
+            prisma.savedSearchTerm.deleteMany(),
+            prisma.savedSearch.deleteMany(),
+            prisma.report.deleteMany(),
+            prisma.itemPhoto.deleteMany(),
+            prisma.item.deleteMany(),
+            prisma.session.deleteMany(),
+            prisma.passwordResetToken.deleteMany(),
+            prisma.verificationPin.deleteMany(),
+            prisma.user.deleteMany({
+                where: {
+                    email: { in: [
+                            "seller2@example.com",
+                            "seller3@example.com",
+                            "seller4@example.com",
+                            "buyer2@example.com",
+                            "buyer3@example.com"
+                        ]
+                    }
+                }
+            })
+        ]);
+    }
+
     // Get existing base data
     const cities = await prisma.city.findMany({ orderBy: { createdAt: "asc" }, take: 5 });
     const categories = await prisma.category.findMany({ orderBy: { createdAt: "asc" }, take: 5 });
