@@ -1,6 +1,6 @@
 import { prisma } from "../db/index.js";
 
-export const findNotificationsByUserId = async ({ userId, unreadOnly, page, limit }) => {
+export const findNotificationsByUserId = async({ userId, unreadOnly, page, limit }) => {
     const where = {
         userId,
         ...(unreadOnly ? { isRead: false } : {})
@@ -19,10 +19,18 @@ export const findNotificationsByUserId = async ({ userId, unreadOnly, page, limi
     return { notifications, total };
 };
 
-export const markNotificationAsRead = async ({ userId, notificationId }) => {
+export const markNotificationAsRead = async({ userId, notificationId }) => {
     // updateMany lets us safely enforce ownership; returns count
     return prisma.notification.updateMany({
         where: { id: notificationId, userId },
+        data: { isRead: true }
+    });
+};
+
+export const markAllNotificationsAsRead = async({ userId }) => {
+    // Mark all unread notifications for the user as read
+    return prisma.notification.updateMany({
+        where: { userId, isRead: false },
         data: { isRead: true }
     });
 };
