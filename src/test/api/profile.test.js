@@ -1,6 +1,6 @@
 import request from "supertest";
 import app from "../../app.js";
-import {API_PREFIX, createAuthContext} from "../helpers/auth.helper.js";
+import {API_PREFIX, createAuthContext} from "../helpers/helper.js";
 import {buildProfilePayload} from "../helpers/factories.js";
 
 describe("Users API (authenticated)", () => {

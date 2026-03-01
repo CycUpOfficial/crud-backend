@@ -5,5 +5,6 @@ module.exports = {
   setupFilesAfterEnv: ["<rootDir>/src/test/jest.setup.js"],
   clearMocks: true,
   resetMocks: true,
-  restoreMocks: true
+  restoreMocks: true,
+  maxWorkers: 1
 };

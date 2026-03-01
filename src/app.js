@@ -52,7 +52,7 @@ if (env.storage?.driver === "local") {
 }
 
 const setupBullBoard = async () => {
-	if (process.env.NODE_ENV === "production") return;
+	if (process.env.NODE_ENV === "production" || process.env.NODE_ENV === "test") return;
 
 	const { createBullBoard } = await import("@bull-board/api");
 	const { BullMQAdapter } = await import("@bull-board/api/bullMQAdapter");

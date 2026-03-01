@@ -58,6 +58,45 @@ export const createSession = async (userId, overrides = {}) => {
   return { session, sessionToken };
 };
 
+export const createVerificationPin = async (userId, overrides = {}) => {
+  const pinCode = overrides.pinCode ?? "123456";
+  const expiresAt = overrides.expiresAt ?? new Date(Date.now() + 15 * 60 * 1000);
+
+  const pin = await prisma.verificationPin.create({
+    data: {
+      userId,
+      pinCode,
+      expiresAt
+    }
+  });
+
+  return { pin, pinCode };
+};
+
+export const createPasswordResetToken = async (userId, overrides = {}) => {
+  const token = overrides.token ?? `reset_${randomSuffix()}`;
+  const expiresAt = overrides.expiresAt ?? new Date(Date.now() + 60 * 60 * 1000);
+
+  const resetToken = await prisma.passwordResetToken.create({
+    data: {
+      userId,
+      token,
+      expiresAt
+    }
+  });
+
+  return { resetToken, token };
+};
+
+export const findSessionByToken = async (sessionToken) =>
+  prisma.session.findUnique({ where: { sessionToken } });
+
+export const findUserById = async (id) =>
+  prisma.user.findUnique({ where: { id } });
+
+export const findPasswordResetTokenByToken = async (token) =>
+  prisma.passwordResetToken.findUnique({ where: { token } });
+
 export const createItem = async (overrides = {}) => {
   const [city, category] = await Promise.all([ensureBaseCity(), ensureBaseCategory()]);
   const owner = overrides.ownerId ? null : await createUser();
@@ -73,7 +112,9 @@ export const createItem = async (overrides = {}) => {
       cityId: overrides.cityId ?? city.id,
       itemType: overrides.itemType ?? "selling",
       sellingPrice: overrides.sellingPrice ?? "10.00",
-      status: overrides.status ?? "published"
+      status: overrides.status ?? "published",
+      buyerId: overrides.buyerId ?? null,
+      soldAt: overrides.soldAt ?? (overrides.buyerId ? new Date() : null)
     }
   });
 };
