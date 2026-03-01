@@ -1,10 +1,10 @@
-import { getNotificationsService, markNotificationReadService } from "../services/notifications.service.js";
+import { getNotificationsService, markNotificationReadService, markAllNotificationsReadService } from "../services/notifications.service.js";
 import { toNotificationsResponseDto } from "../dtos/notifications.dto.js";
 
-export const getNotificationsController = async (req, res) => {
+export const getNotificationsController = async(req, res) => {
     const userId = req.auth.userId;
 
-    const query = req.validated?.query ?? {};
+    const query = req.validated ?.query ?? {};
     const unreadOnly = query.unreadOnly ?? false;
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
@@ -19,7 +19,7 @@ export const getNotificationsController = async (req, res) => {
     );
 };
 
-export const markNotificationReadController = async (req, res) => {
+export const markNotificationReadController = async(req, res) => {
     const userId = req.auth.userId;
     const { notificationId } = req.validated.params;
 
@@ -27,5 +27,16 @@ export const markNotificationReadController = async (req, res) => {
 
     res.status(200).json({
         message: "Notification Mark as read!"
+    });
+};
+
+export const markAllNotificationsReadController = async(req, res) => {
+    const userId = req.auth.userId;
+
+    const result = await markAllNotificationsReadService({ userId });
+
+    res.status(200).json({
+        message: result.message,
+        count: result.count
     });
 };

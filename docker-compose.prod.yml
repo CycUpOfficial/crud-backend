@@ -17,8 +17,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.prod
-    ports:
-      - "3000:3000"
     env_file:
       - .env
     environment:
@@ -30,6 +28,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mongo:
+        condition: service_healthy
+    volumes:
+      - uploads:/app/uploads
     restart: unless-stopped
 
   worker-email:
@@ -44,6 +46,8 @@ services:
       db:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      mongo:
         condition: service_healthy
     command: npm run worker:email
     restart: unless-stopped
@@ -76,5 +80,36 @@ services:
       retries: 10
     restart: unless-stopped
 
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_started
+    restart: unless-stopped
+
 volumes:
   pgdata:
+  mongodata:
+  uploads:
+  caddy_data:
+  caddy_config:
