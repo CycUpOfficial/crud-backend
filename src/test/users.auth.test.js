@@ -35,6 +35,7 @@ describe("Users API (authenticated)", () => {
 
   for (const city of candidateCities) {
     const payload = {
+      username: profileRes.body.username || auth.username,
       firstName: "Joan",
       familyName: profileRes.body.familyName || "Test",
       address: profileRes.body.address || "123 Main Street",

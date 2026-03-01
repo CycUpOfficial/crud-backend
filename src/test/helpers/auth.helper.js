@@ -8,6 +8,10 @@ function makeTestEmail() {
   return `joan.test.${Date.now()}@abo.fi`;
 }
 
+function makeTestUsername() {
+  return `joan_test_${Date.now()}`;
+}
+
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
@@ -108,22 +112,31 @@ async function fetchLatestPinForEmail(email, { retries = 25, delayMs = 700 } = {
 
 async function createAndLoginTestUser() {
   const email = makeTestEmail();
+  const username = makeTestUsername();
   const password = "SecurePass123!";
 
   // REGISTER
-  await request(BASE_URL)
+  const registerRes = await request(BASE_URL)
     .post(`${API_PREFIX}/auth/register`)
     .send({ email })
     .set("Accept", "application/json");
+
+  if (registerRes.status !== 201) {
+    throw new Error(`Register failed (${registerRes.status}): ${JSON.stringify(registerRes.body)}`);
+  }
 
   // PIN (Mailpit)
   const pinCode = await fetchLatestPinForEmail(email);
 
   // VERIFY
-  await request(BASE_URL)
+  const verifyRes = await request(BASE_URL)
     .post(`${API_PREFIX}/auth/verify`)
-    .send({ email, pinCode, password, passwordConfirmation: password })
+    .send({ email, pinCode, username, password, passwordConfirmation: password })
     .set("Accept", "application/json");
+
+  if (verifyRes.status !== 200) {
+    throw new Error(`Verify failed (${verifyRes.status}): ${JSON.stringify(verifyRes.body)}`);
+  }
 
   // LOGIN (guardamos cookie con agent)
   const agent = request.agent(BASE_URL);
@@ -132,7 +145,20 @@ async function createAndLoginTestUser() {
     .send({ email, password })
     .set("Accept", "application/json");
 
-  return { agent, email, password, loginRes };
+  if (loginRes.status !== 200) {
+    throw new Error(`Login failed (${loginRes.status}): ${JSON.stringify(loginRes.body)}`);
+  }
+
+  const setCookie = loginRes.headers?.["set-cookie"];
+  const cookieHeader = Array.isArray(setCookie) && setCookie.length > 0
+    ? String(setCookie[0]).split(";")[0]
+    : null;
+
+  if (!cookieHeader) {
+    throw new Error("Login did not return a session cookie.");
+  }
+
+  return { agent, email, username, password, loginRes, cookieHeader };
 }
 
 module.exports = {
