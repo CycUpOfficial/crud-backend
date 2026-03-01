@@ -4,10 +4,10 @@ import { toNotificationsResponseDto } from "../dtos/notifications.dto.js";
 export const getNotificationsController = async(req, res) => {
     const userId = req.auth.userId;
 
-    const query = req.validated ? .query ? ? {};
-    const unreadOnly = query.unreadOnly ? ? false;
-    const page = query.page ? ? 1;
-    const limit = query.limit ? ? 20;
+    const query = req.validated ?.query ?? {};
+    const unreadOnly = query.unreadOnly ?? false;
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
 
     const result = await getNotificationsService({ userId, unreadOnly, page, limit });
 
