@@ -6,30 +6,28 @@ import { createSavedSearchController } from "../controllers/saved-search.control
 import { getSavedSearchesController } from "../controllers/saved-search.controller.js";
 import { updateSavedSearchController, deleteSavedSearchController } from "../controllers/saved-search.controller.js";
 import { updateSavedSearchSchema, deleteSavedSearchSchema } from "../validators/saved-search.validator.js";
-import { writeLimiter, readLimiter } from "../middlewares/throttle.middleware.js";
-
 
 const router = Router();
 
 router.post(
-    "/saved_search", writeLimiter,
+    "/saved_search",
     validateRequest(createSavedSearchSchema),
     asyncHandler(createSavedSearchController)
 );
 
 router.get(
-    "/saved-search", readLimiter,
+    "/saved-search",
     asyncHandler(getSavedSearchesController)
 );
 
 router.put(
-    "/saved-search/:searchId", writeLimiter,
+    "/saved-search/:searchId",
     validateRequest(updateSavedSearchSchema),
     asyncHandler(updateSavedSearchController)
 );
 
 router.delete(
-    "/saved-search/:searchId", writeLimiter,
+    "/saved-search/:searchId",
     validateRequest(deleteSavedSearchSchema),
     asyncHandler(deleteSavedSearchController)
 );

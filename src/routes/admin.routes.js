@@ -16,43 +16,38 @@ import {
     unblockAdminUserController,
     submitAdminReportController
 } from "../controllers/admin.controller.js";
-import { readLimiter, adminDangerLimiter } from "../middlewares/throttle.middleware.js";
-
 
 const router = Router();
 
 router.post(
     "/items/:itemId/disable",
-    adminDangerLimiter,
     requireAdmin,
     asyncHandler(disableAdminItemController)
 );
 
 router.delete(
     "/items/:itemId/remove",
-    adminDangerLimiter,
     requireAdmin,
     asyncHandler(removeAdminItemController)
 );
 
 router.get(
-    "/admin/analytics", readLimiter,
+    "/admin/analytics",
     requireAdmin,
     asyncHandler(getAdminAnalyticsController)
 );
 
 router.get(
-    "/admin/users", readLimiter,
+    "/admin/users",
     requireAdmin,
     validateRequest(adminUsersSchema),
     asyncHandler(getAdminUsersController)
 );
 
-router.get("/admin/reports", readLimiter, requireAdmin, asyncHandler(getAdminReports));
+router.get("/admin/reports", requireAdmin, asyncHandler(getAdminReports));
 
 router.post(
     "/admin/users/:userId/block",
-    adminDangerLimiter,
     requireAdmin,
     validateRequest(adminBlockUserSchema),
     asyncHandler(blockAdminUserController)
@@ -60,7 +55,6 @@ router.post(
 
 router.post(
     "/admin/users/:userId/unblock",
-    adminDangerLimiter,
     requireAdmin,
     validateRequest(adminUnblockUserSchema),
     asyncHandler(unblockAdminUserController)
@@ -68,7 +62,6 @@ router.post(
 
 router.post(
     "/admin/reports",
-    adminDangerLimiter,
     requireAdmin,
     validateRequest(adminCreateReportSchema),
     asyncHandler(submitAdminReportController)
@@ -76,3 +69,8 @@ router.post(
 
 
 export default router;
+
+
+
+
+
