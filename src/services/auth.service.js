@@ -32,6 +32,7 @@ const RESET_TOKEN_BYTES = 32;
 const RESET_TOKEN_EXPIRY_MINUTES = 60;
 
 const normalizeUsername = (value) => value?.trim();
+const normalizeEmail = (value) => value?.trim().toLowerCase();
 
 const isUniversityEmail = (email) => {
     if (!email || !email.includes('@')) return false;
@@ -84,14 +85,16 @@ async function sendVerificationEmail({email, pinCode}) {
 }
 
 export const registerUser = async (email) => {
-    failIfEmailFormatIsInvalid(email);
-    await failIfUserAlreadyExists(email);
+    const normalizedEmail = normalizeEmail(email);
+
+    failIfEmailFormatIsInvalid(normalizedEmail);
+    await failIfUserAlreadyExists(normalizedEmail);
 
     const pinCode = generatePinCode();
     const expiresAt = new Date(Date.now() + PIN_EXPIRY_MINUTES * 60 * 1000);
 
-    const user = await createUserWithVerificationPin(email, pinCode, expiresAt);
-    await sendVerificationEmail({email, pinCode})
+    const user = await createUserWithVerificationPin(normalizedEmail, pinCode, expiresAt);
+    await sendVerificationEmail({ email: normalizedEmail, pinCode });
 
     return {
         message: "Registration successful. Please check your email for verification PIN.",
