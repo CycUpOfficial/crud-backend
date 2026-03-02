@@ -14,7 +14,7 @@ import app from "../../app.js";
 import { API_PREFIX } from "../helpers/helper.js";
 
 const randomSuffix = () => `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-const makeTestEmail = () => `user@abo.fi`;
+const makeTestEmail = () => `user.${randomSuffix()}@abo.fi`;
 const makeTestUsername = () => `user_${randomSuffix()}`;
 
 const hashPassword = async (password) => bcrypt.hash(password, 12);
@@ -140,6 +140,26 @@ describe("AUTH - /auth/verify", () => {
         expect(verifyRes.body).toHaveProperty("message");
     });
 
+    test("400 - should reject short password", async () => {
+        const { user, pinCode } = await createUserWithVerificationPin();
+        const username = makeTestUsername();
+
+        const verifyRes = await request(app)
+            .post(`${API_PREFIX}/auth/verify`)
+            .send({
+                email: user.email,
+                pinCode,
+                username,
+                password: "short",
+                passwordConfirmation: "short"
+            })
+            .set("Accept", "application/json");
+
+        expect(verifyRes.status).toBe(400);
+        expect(verifyRes.headers["content-type"]).toMatch(/json/i);
+        expect(verifyRes.body).toHaveProperty("message");
+    });
+
     test("should return 400 or 404 for non-existing email", async () => {
         const email = makeTestEmail();
         const username = makeTestUsername();
@@ -225,6 +245,19 @@ describe("AUTH - /auth/login", () => {
         expect(msg).toContain("not");
         expect(msg).toContain("verified");
     });
+
+    test("400 - should reject missing password", async () => {
+        const email = makeTestEmail();
+
+        const res = await request(app)
+            .post(`${API_PREFIX}/auth/login`)
+            .send({ email })
+            .set("Accept", "application/json");
+
+        expect(res.status).toBe(400);
+        expect(res.headers["content-type"]).toMatch(/json/i);
+        expect(res.body).toHaveProperty("message");
+    });
 });
 
 describe("AUTH - /auth/logout", () => {
@@ -294,7 +327,7 @@ describe("AUTH - /auth/password/reset", () => {
 });
 
 describe("AUTH - /auth/password/reset/confirm", () => {
-    test("200 - should confirm password reset successfully and allow login with new password", async () => {
+    test("200 - should confirm password reset successfully and update password hash", async () => {
         const email = makeTestEmail();
         const oldPassword = "SecurePass123!";
         const newPassword = "NewSecurePass123!";
@@ -340,5 +373,19 @@ describe("AUTH - /auth/password/reset/confirm", () => {
         const msg = String(res.body.message).toLowerCase();
         expect(msg).toContain("password");
         expect(msg).toContain("match");
+    });
+
+    test("400 - should reject missing reset token", async () => {
+        const res = await request(app)
+            .post(`${API_PREFIX}/auth/password/reset/confirm`)
+            .send({
+                newPassword: "NewSecurePass123!",
+                passwordConfirmation: "NewSecurePass123!"
+            })
+            .set("Accept", "application/json");
+
+        expect(res.status).toBe(400);
+        expect(res.headers["content-type"]).toMatch(/json/i);
+        expect(res.body).toHaveProperty("message");
     });
 });

@@ -1,9 +1,9 @@
 import request from "supertest";
-import { env } from "../../config/env.js";
-import { createItem, createSession, createUser } from "../helpers/factories.js";
-import { API_PREFIX } from "../helpers/helper.js";
+import app from "../../app.js";
+import { createItem, createUser } from "../helpers/factories.js";
+import { API_PREFIX, createAuthContext } from "../helpers/helper.js";
 
-const { default: app } = await import("../../app.js");
+const MISSING_UUID = "00000000-0000-0000-0000-000000000000";
 
 function isJson(res) {
   return String(res.headers?.["content-type"] || "").includes("application/json");
@@ -11,19 +11,16 @@ function isJson(res) {
 
 describe("Ratings API", () => {
   let item = null;
-  let authCookie = null;
+  let auth = null;
 
   beforeEach(async () => {
+    auth = await createAuthContext();
     const seller = await createUser();
-    const buyer = await createUser();
     item = await createItem({
       ownerId: seller.id,
-      buyerId: buyer.id,
+      buyerId: auth.user.id,
       status: "sold"
     });
-
-    const { sessionToken } = await createSession(buyer.id);
-    authCookie = `${env.cookie.name}=${sessionToken}`;
   });
 
   describe("Unauthenticated", () => {
@@ -46,7 +43,7 @@ describe("Ratings API", () => {
     test("POST /items/:itemId/ratings -> 400 for invalid rating value", async () => {
       const res = await request(app)
         .post(`${API_PREFIX}/items/${item.id}/ratings`)
-        .set("Cookie", authCookie)
+        .set(auth.headers)
         .send({ rating: 999, comment: "nope" })
         .set("Accept", "application/json");
 
@@ -61,7 +58,7 @@ describe("Ratings API", () => {
     test("POST /items/:itemId/ratings -> 400 for missing body fields", async () => {
       const res = await request(app)
         .post(`${API_PREFIX}/items/${item.id}/ratings`)
-        .set("Cookie", authCookie)
+        .set(auth.headers)
         .send({})
         .set("Accept", "application/json");
 
@@ -75,7 +72,7 @@ describe("Ratings API", () => {
     test("POST /items/:itemId/ratings -> 200 when buyer rates seller", async () => {
       const res = await request(app)
         .post(`${API_PREFIX}/items/${item.id}/ratings`)
-        .set("Cookie", authCookie)
+        .set(auth.headers)
         .send({ rating: 5, comment: "Great seller, item as described!" })
         .set("Accept", "application/json");
 
@@ -86,6 +83,32 @@ describe("Ratings API", () => {
         expect(res.body).toHaveProperty("itemId", item.id);
         expect(res.body).toHaveProperty("rating", 5);
         expect(res.body).toHaveProperty("comment");
+      }
+    });
+
+    test("POST /items/:itemId/ratings -> 400 when rating is below allowed range", async () => {
+      const res = await request(app)
+        .post(`${API_PREFIX}/items/${item.id}/ratings`)
+        .set(auth.headers)
+        .send({ rating: 0, comment: "too low" })
+        .set("Accept", "application/json");
+
+      expect(res.status).toBe(400);
+      if (isJson(res)) {
+        expect(res.body).toHaveProperty("message");
+      }
+    });
+
+    test("POST /items/:itemId/ratings -> 404 when item does not exist", async () => {
+      const res = await request(app)
+        .post(`${API_PREFIX}/items/${MISSING_UUID}/ratings`)
+        .set(auth.headers)
+        .send({ rating: 5, comment: "Great seller" })
+        .set("Accept", "application/json");
+
+      expect(res.status).toBe(404);
+      if (isJson(res)) {
+        expect(res.body).toHaveProperty("message");
       }
     });
   });
