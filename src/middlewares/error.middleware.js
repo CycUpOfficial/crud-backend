@@ -1,4 +1,4 @@
-import { logError } from "../utils/logger.js";
+import {logError} from "../utils/logger.js";
 
 export const errorHandler = (err, req, res, next) => {
     const status = err.statusCode ?? 500;
@@ -12,11 +12,18 @@ export const errorHandler = (err, req, res, next) => {
             message,
             details: err.details ?? undefined
         });
-    }
-    else{
-        res.status(status).json({
-            message: "An unexpected Error happened in the system." ?? undefined
-        });
+    } else {
+        if (status === 500) {
+            res.status(status).json({
+                message: "An unexpected Error happened in the system." ?? undefined
+            });
+        }
+        else {
+            res.status(status).json({
+                message,
+                details: err.details ?? undefined
+            });
+        }
     }
 
 };
