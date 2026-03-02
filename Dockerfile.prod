@@ -11,7 +11,7 @@ RUN npx prisma generate
 RUN npm prune --omit=dev
 
 COPY src ./src
-RUN mkdir -p uploads
+RUN mkdir -p uploads logs
 
 RUN addgroup -S app && adduser -S app -G app
 RUN chown -R app:app /app

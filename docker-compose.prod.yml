@@ -7,6 +7,8 @@ services:
       - .env
     environment:
       NODE_ENV: production
+      DB_HOST: db
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@db:5432/${DB_NAME:-app_db}
     depends_on:
       db:
         condition: service_healthy
@@ -21,6 +23,10 @@ services:
       - .env
     environment:
       NODE_ENV: production
+      DB_HOST: db
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@db:5432/${DB_NAME:-app_db}
+      REDIS_HOST: redis
+      MONGO_URI: mongodb://mongo:27017/cycup
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -32,6 +38,7 @@ services:
         condition: service_healthy
     volumes:
       - uploads:/app/uploads
+      - logs:/app/logs
     restart: unless-stopped
 
   worker-email:
@@ -42,6 +49,10 @@ services:
       - .env
     environment:
       NODE_ENV: production
+      DB_HOST: db
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@db:5432/${DB_NAME:-app_db}
+      REDIS_HOST: redis
+      MONGO_URI: mongodb://mongo:27017/cycup
     depends_on:
       db:
         condition: service_healthy
@@ -59,11 +70,11 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: app_db
+      POSTGRES_DB: ${DB_NAME:-app_db}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d app_db"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ${DB_NAME:-app_db}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -111,5 +122,6 @@ volumes:
   pgdata:
   mongodata:
   uploads:
+  logs:
   caddy_data:
   caddy_config:
