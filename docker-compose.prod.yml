@@ -138,7 +138,11 @@ services:
 
 volumes:
   pgdata:
+    external: true
+    name: cycup_pgdata_prod
   mongodata:
+    external: true
+    name: cycup_mongodata_prod
   uploads:
   logs:
   caddy_data:
