@@ -15,6 +15,24 @@ services:
     command: sh -c "npx prisma migrate deploy"
     restart: "no"
 
+  seed:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      DB_HOST: db
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@db:5432/${DB_NAME:-app_db}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+    command: sh -c "npm run seed"
+    restart: "no"
+
   api:
     build:
       context: .
@@ -28,7 +46,7 @@ services:
       REDIS_HOST: redis
       MONGO_URI: mongodb://mongo:27017/cycup
     depends_on:
-      migrate:
+      seed:
         condition: service_completed_successfully
       db:
         condition: service_healthy
