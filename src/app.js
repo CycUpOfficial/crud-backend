@@ -39,7 +39,7 @@ app.use(helmet());
 
 app.use(
 	cors({
-		origin: ["http://localhost:4000"], // your frontend origin
+		origin: env.cors.origins,
 		credentials: true,
 		methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
 		allowedHeaders: ["Content-Type", "Authorization"],

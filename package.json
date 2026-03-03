@@ -7,7 +7,6 @@
         "dev": "nodemon --legacy-watch --watch src --ext js,json src/server.js",
         "start": "node src/server.js",
         "seed": "node src/seed.js",
-        "seed:force": "npm run prisma -- migrate reset --force && node src/seed.js --force",
         "test": "jest",
         "worker:email": "node src/workers/email.worker.js"
     },

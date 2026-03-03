@@ -7,29 +7,56 @@ services:
       - .env
     environment:
       NODE_ENV: production
+      DB_HOST: db
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@db:5432/${DB_NAME:-app_db}
     depends_on:
       db:
         condition: service_healthy
     command: sh -c "npx prisma migrate deploy"
     restart: "no"
 
-  api:
+  seed:
     build:
       context: .
       dockerfile: Dockerfile.prod
-    ports:
-      - "3000:3000"
     env_file:
       - .env
     environment:
       NODE_ENV: production
+      DB_HOST: db
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@db:5432/${DB_NAME:-app_db}
     depends_on:
       migrate:
         condition: service_completed_successfully
       db:
         condition: service_healthy
+    command: sh -c "npm run seed"
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      DB_HOST: db
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD}@db:5432/${DB_NAME:-app_db}
+      REDIS_HOST: redis
+      MONGO_URI: mongodb://mongo:27017/cycup
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
       redis:
         condition: service_healthy
+      mongo:
+        condition: service_healthy
+    volumes:
+      - uploads:/app/uploads
+      - logs:/app/logs
     restart: unless-stopped
 
   worker-email:
@@ -40,10 +67,16 @@ services:
       - .env
     environment:
       NODE_ENV: production
+      DB_HOST: db
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_HOST: redis
+      MONGO_URI: mongodb://mongo:27017/cycup
     depends_on:
       db:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      mongo:
         condition: service_healthy
     command: npm run worker:email
     restart: unless-stopped
@@ -55,11 +88,11 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: app_db
+      POSTGRES_DB: ${DB_NAME:-app_db}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d app_db"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ${DB_NAME:-app_db}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -76,5 +109,41 @@ services:
       retries: 10
     restart: unless-stopped
 
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodata:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_started
+    restart: unless-stopped
+
 volumes:
   pgdata:
+    external: true
+    name: cycup_pgdata_prod
+  mongodata:
+    external: true
+    name: cycup_mongodata_prod
+  uploads:
+  logs:
+  caddy_data:
+  caddy_config:

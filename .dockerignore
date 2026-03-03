@@ -6,6 +6,5 @@ yarn-error.log
 .git
 .gitignore
 .vscode
-.env
-.env.*
-prisma/migrations
+Dockerfile
+docker-compose.yml
