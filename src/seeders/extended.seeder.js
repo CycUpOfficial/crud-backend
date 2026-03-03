@@ -33,8 +33,8 @@ const ITEM_TEMPLATES = [{
         itemType: "selling",
         sellingPrice: "450.00",
         photos: [
-            "https://images.unsplash.com/photo-1588405348159-ba1e6db64b8f?w=400",
-            "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400"
+            "/uploads/Hp 14 16gb RAM 320GB.jpg",
+            "/uploads/IPHONE.jpg"
         ]
     },
     {
@@ -45,7 +45,7 @@ const ITEM_TEMPLATES = [{
         itemType: "selling",
         sellingPrice: "200.00",
         photos: [
-            "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400"
+            "/uploads/e-bike_shutterstock-1024x683.jpg"
         ]
     },
     {
@@ -56,7 +56,7 @@ const ITEM_TEMPLATES = [{
         itemType: "selling",
         sellingPrice: "75.00",
         photos: [
-            "https://images.unsplash.com/photo-1517668808822-9ebb02ae2a0e?w=400"
+            "/uploads/SOUND BAR.jpg"
         ]
     },
     {
@@ -68,7 +68,7 @@ const ITEM_TEMPLATES = [{
         lendingPrice: "25.00",
         rentUnit: "day",
         photos: [
-            "https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=400"
+            "/uploads/playstation-5.jpg"
         ]
     },
     {
@@ -80,7 +80,7 @@ const ITEM_TEMPLATES = [{
         lendingPrice: "15.00",
         rentUnit: "day",
         photos: [
-            "https://images.unsplash.com/photo-1606986628253-05620e9b0a80?w=400"
+            "/uploads/sennheiser-consumer-audio-momentum-4-wireless-headphone.png"
         ]
     },
     {
@@ -90,7 +90,7 @@ const ITEM_TEMPLATES = [{
         condition: "used",
         itemType: "giveaway",
         photos: [
-            "https://images.unsplash.com/photo-1577654445533-6f8832b94a81?w=400"
+            "/uploads/vm-wm-viita-77-harmaa_3_20201_3.jpg"
         ]
     },
     {
@@ -100,7 +100,7 @@ const ITEM_TEMPLATES = [{
         condition: "used",
         itemType: "giveaway",
         photos: [
-            "https://images.unsplash.com/photo-1543002588-d83cea6baa2b?w=400"
+            "/uploads/images.jpg"
         ]
     },
     {
@@ -111,7 +111,7 @@ const ITEM_TEMPLATES = [{
         itemType: "selling",
         sellingPrice: "45.00",
         photos: [
-            "https://images.unsplash.com/photo-1589003077984-894e133da19d?w=400"
+            "/uploads/MACBOOK CHARGER.jpg"
         ]
     },
     {
@@ -122,7 +122,7 @@ const ITEM_TEMPLATES = [{
         itemType: "selling",
         sellingPrice: "80.00",
         photos: [
-            "https://images.unsplash.com/photo-1592078615290-033ee584e267?w=400"
+            "/uploads/nio-modern-table.jpg"
         ]
     },
     {
@@ -133,7 +133,7 @@ const ITEM_TEMPLATES = [{
         itemType: "selling",
         sellingPrice: "120.00",
         photos: [
-            "https://images.unsplash.com/photo-1507842217343-583f20270557?w=400"
+            "/uploads/Montana-Beige_1B-scaled.jpg"
         ]
     }
 ];

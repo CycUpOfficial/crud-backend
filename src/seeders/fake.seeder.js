@@ -166,25 +166,25 @@ export const seedFakeData = async({ force = false } = {}) => {
         await prisma.itemPhoto.createMany({
             data: [{
                     itemId: soldItem.id,
-                    photoUrl: "https://example.com/photos/bike.jpg",
+                    photoUrl: "/uploads/e-bike_shutterstock-1024x683.jpg",
                     isMain: true,
                     displayOrder: 1
                 },
                 {
                     itemId: lendingItem.id,
-                    photoUrl: "https://example.com/photos/laptop.jpg",
+                    photoUrl: "/uploads/Hp 14 16gb RAM 320GB.jpg",
                     isMain: true,
                     displayOrder: 1
                 },
                 {
                     itemId: giveawayItem.id,
-                    photoUrl: "https://example.com/photos/lamp.jpg",
+                    photoUrl: "/uploads/Montana-Beige_1B-scaled.jpg",
                     isMain: true,
                     displayOrder: 1
                 },
                 {
                     itemId: publishedItem.id,
-                    photoUrl: "https://example.com/photos/gaming-laptop.jpg",
+                    photoUrl: "/uploads/playstation-5.jpg",
                     isMain: true,
                     displayOrder: 1
                 }
