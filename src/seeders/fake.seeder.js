@@ -1,22 +1,47 @@
 import crypto from "crypto";
+import bcryptjs from "bcryptjs";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../db/index.js";
 
 const buildToken = () => crypto.randomBytes(16).toString("hex");
 
-const getOrCreateUser = async({ email, username, isAdmin, isVerified, cityId }) =>
-    prisma.user.upsert({
+// Helper function to create password hash (matching auth.service.js - roundness 12)
+const hashPassword = async(password) => {
+    return bcryptjs.hash(password, 12);
+};
+
+const getOrCreateUser = async({ email, username, isAdmin, isVerified, cityId, password }) => {
+    const passwordHash = password ? await hashPassword(password) : "PENDING";
+
+    return prisma.user.upsert({
         where: { email },
         update: {},
         create: {
             email,
             username,
-            passwordHash: "HASHED",
+            passwordHash,
             isAdmin,
             isVerified,
             cityId
         }
     });
+};
+
+// ============================================================================
+// TEST ACCOUNTS - Use these credentials to login and test the application:
+// ============================================================================
+// Account 1:
+//   Email: danny.lafond@abo.fi
+//   Password: Test1234
+//   Username: danny_lafond
+//   Role: Regular User (Seller)
+//
+// Account 2:
+//   Email: sema.hoippa@utu.fi
+//   Password: Test1234
+//   Username: sema_hoippa
+//   Role: Regular User (Buyer)
+// ============================================================================
 
 // call with { force: true } to clear existing fake records before inserting
 export const seedFakeData = async({ force = false } = {}) => {
@@ -37,10 +62,8 @@ export const seedFakeData = async({ force = false } = {}) => {
             prisma.user.deleteMany({
                 where: {
                     email: { in: [
-                            "admin@abo.fi",
-                            "seller@utu.fi",
-                            "buyer@abo.fi",
-                            "pending@utu.fi"
+                            "danny.lafond@abo.fi",
+                            "sema.hoippa@utu.fi"
                         ]
                     }
                 }
@@ -57,75 +80,24 @@ export const seedFakeData = async({ force = false } = {}) => {
         throw new Error("Cities and categories must be seeded before fake data.");
     }
 
-    const admin = await getOrCreateUser({
-        email: "admin@abo.fi",
-        username: "admin",
-        isAdmin: true,
-        isVerified: true,
-        cityId: city.id
-    });
-
+    // Create test users with known passwords (Test1234)
     const seller = await getOrCreateUser({
-        email: "seller@utu.fi",
-        username: "seller1",
+        email: "danny.lafond@abo.fi",
+        username: "danny_lafond",
         isAdmin: false,
         isVerified: true,
-        cityId: city.id
+        cityId: city.id,
+        password: "Test1234"
     });
 
     const buyer = await getOrCreateUser({
-        email: "buyer@abo.fi",
-        username: "buyer1",
+        email: "sema.hoippa@utu.fi",
+        username: "sema_hoippa",
         isAdmin: false,
         isVerified: true,
-        cityId: city.id
+        cityId: city.id,
+        password: "Test1234"
     });
-
-    const pendingUser = await getOrCreateUser({
-        email: "pending@utu.fi",
-        username: "pending",
-        isAdmin: false,
-        isVerified: false,
-        cityId: city.id
-    });
-
-    const verificationPin = await prisma.verificationPin.findFirst({
-        where: { userId: pendingUser.id }
-    });
-    if (!verificationPin) {
-        await prisma.verificationPin.create({
-            data: {
-                userId: pendingUser.id,
-                pinCode: "123456",
-                expiresAt: new Date(Date.now() + 15 * 60 * 1000)
-            }
-        });
-    }
-
-    const passwordResetToken = await prisma.passwordResetToken.findFirst({
-        where: { userId: seller.id }
-    });
-    if (!passwordResetToken) {
-        await prisma.passwordResetToken.create({
-            data: {
-                userId: seller.id,
-                token: buildToken(),
-                expiresAt: new Date(Date.now() + 60 * 60 * 1000),
-                used: false
-            }
-        });
-    }
-
-    const session = await prisma.session.findFirst({ where: { userId: admin.id } });
-    if (!session) {
-        await prisma.session.create({
-            data: {
-                userId: admin.id,
-                sessionToken: buildToken(),
-                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-            }
-        });
-    }
 
     const itemCount = await prisma.item.count();
     if (itemCount === 0) {
@@ -164,7 +136,7 @@ export const seedFakeData = async({ force = false } = {}) => {
 
         const giveawayItem = await prisma.item.create({
             data: {
-                ownerId: admin.id,
+                ownerId: buyer.id,
                 title: "Desk Lamp",
                 categoryId: category.id,
                 condition: "used",
@@ -172,6 +144,21 @@ export const seedFakeData = async({ force = false } = {}) => {
                 address: "Student Housing 5",
                 cityId: city.id,
                 itemType: "giveaway",
+                status: "published"
+            }
+        });
+
+        const publishedItem = await prisma.item.create({
+            data: {
+                ownerId: seller.id,
+                title: "Gaming Laptop",
+                categoryId: category.id,
+                condition: "used",
+                description: "High-performance gaming laptop with RTX 3060, 16GB RAM. Perfect for students.",
+                address: "Tech Building 7",
+                cityId: city.id,
+                itemType: "selling",
+                sellingPrice: new Prisma.Decimal("450.00"),
                 status: "published"
             }
         });
@@ -194,31 +181,71 @@ export const seedFakeData = async({ force = false } = {}) => {
                     photoUrl: "https://example.com/photos/lamp.jpg",
                     isMain: true,
                     displayOrder: 1
+                },
+                {
+                    itemId: publishedItem.id,
+                    photoUrl: "https://example.com/photos/gaming-laptop.jpg",
+                    isMain: true,
+                    displayOrder: 1
                 }
             ]
         });
 
+        // Create a rating for the sold item
         await prisma.rating.create({
             data: {
                 itemId: soldItem.id,
                 sellerId: seller.id,
                 raterId: buyer.id,
                 rating: 5,
-                comment: "Great seller and item as described."
+                comment: "Great seller and item as described. Very professional!"
+            }
+        });
+
+        // Create additional rating
+        await prisma.rating.create({
+            data: {
+                itemId: publishedItem.id,
+                sellerId: seller.id,
+                raterId: buyer.id,
+                rating: 4,
+                comment: "Good condition, prompt communication."
             }
         });
     }
 
     const notificationCount = await prisma.notification.count();
     if (notificationCount === 0) {
-        await prisma.notification.create({
-            data: {
-                userId: seller.id,
-                type: "rating_received",
-                title: "New rating received",
-                message: "You received a new rating on your item.",
-                metadata: { itemTitle: "Used Bicycle" }
-            }
+        await prisma.notification.createMany({
+            data: [{
+                    userId: seller.id,
+                    type: "rating_received",
+                    title: "New rating received",
+                    message: "You received a 5-star rating on your item 'Used Bicycle'.",
+                    metadata: { itemTitle: "Used Bicycle", rating: 5 }
+                },
+                {
+                    userId: seller.id,
+                    type: "item_status_change",
+                    title: "Item sold",
+                    message: "Your item 'Used Bicycle' has been marked as sold.",
+                    metadata: { itemTitle: "Used Bicycle", newStatus: "sold" }
+                },
+                {
+                    userId: buyer.id,
+                    type: "saved_search_match",
+                    title: "New match found",
+                    message: "A new item matching your saved search 'gaming' is available.",
+                    metadata: { searchTerm: "gaming", itemTitle: "Gaming Laptop" }
+                },
+                {
+                    userId: seller.id,
+                    type: "rating_received",
+                    title: "New rating",
+                    message: "You received a 4-star rating on your item 'Gaming Laptop'.",
+                    metadata: { itemTitle: "Gaming Laptop", rating: 4 }
+                }
+            ]
         });
     }
 
@@ -231,8 +258,9 @@ export const seedFakeData = async({ force = false } = {}) => {
                 inAppEnabled: true,
                 terms: {
                     create: [
-                        { searchTerm: "bicycle" },
-                        { searchTerm: "laptop" }
+                        { searchTerm: "gaming" },
+                        { searchTerm: "laptop" },
+                        { searchTerm: "bicycle" }
                     ]
                 }
             }
@@ -242,6 +270,21 @@ export const seedFakeData = async({ force = false } = {}) => {
             where: { savedSearchId: savedSearch.id },
             data: { createdAt: new Date() }
         });
+
+        // Create another saved search for seller
+        await prisma.savedSearch.create({
+            data: {
+                userId: seller.id,
+                emailEnabled: false,
+                inAppEnabled: true,
+                terms: {
+                    create: [
+                        { searchTerm: "electronics" },
+                        { searchTerm: "gadgets" }
+                    ]
+                }
+            }
+        });
     }
 
     const reportCount = await prisma.report.count();
@@ -250,9 +293,22 @@ export const seedFakeData = async({ force = false } = {}) => {
             data: {
                 reporterId: buyer.id,
                 reportedUserId: seller.id,
-                description: "Item listing had missing details.",
+                description: "Item listing is missing some details.",
                 status: "pending"
             }
         });
     }
+
+    console.log("✓ Fake data seeded successfully!");
+    console.log("\n📝 TEST CREDENTIALS:");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    console.log("\nSeller Account:");
+    console.log("  Email: danny.lafond@abo.fi");
+    console.log("  Password: Test1234");
+    console.log("  Username: danny_lafond");
+    console.log("\nBuyer Account:");
+    console.log("  Email: sema.hoippa@utu.fi");
+    console.log("  Password: Test1234");
+    console.log("  Username: sema_hoippa");
+    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 };
