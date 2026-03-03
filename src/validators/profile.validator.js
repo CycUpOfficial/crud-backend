@@ -1,4 +1,4 @@
-import {z} from "zod";
+import { z } from "zod";
 
 export const getProfileSchema = z.object({
     body: z.object({}).optional(),
@@ -36,12 +36,50 @@ export const updateProfileSchema = z.object({
                 error: issue => issue.input === undefined ? "City Name is Required" : "This field must be a string"
             }),
         phoneNumber: z
-            .string(
-                {
-                    error: issue => issue.input === undefined ? "Phone Number is Required" : "This field must be a string"
-                })
+            .string({
+                error: issue => issue.input === undefined ? "Phone Number is Required" : "This field must be a string"
+            })
             .regex(/^\+[1-9]\d{7,14}$/, "Phone number must be in international E.164 format (e.g., +491234567890).")
     }),
+    params: z.object({}).optional(),
+    query: z.object({}).optional()
+});
+
+// additional schemas for partial updates
+
+export const updateNameSchema = z.object({
+    body: z.object({
+        firstName: z.string().optional(),
+        familyName: z.string().optional()
+    }).refine(data => data.firstName || data.familyName, { message: "At least one of firstName or familyName must be provided." }),
+    params: z.object({}).optional(),
+    query: z.object({}).optional()
+});
+
+export const updateAddressSchema = z.object({
+    body: z.object({
+        address: z.string().optional(),
+        postalCode: z.string().optional(),
+        city: z.string().optional()
+    }).refine(data => data.address || data.postalCode || data.city, { message: "At least one address field must be provided." }),
+    params: z.object({}).optional(),
+    query: z.object({}).optional()
+});
+
+export const updatePhoneSchema = z.object({
+    body: z.object({
+        phoneNumber: z
+            .string({
+                error: issue => issue.input === undefined ? "Phone Number is Required" : "This field must be a string"
+            })
+            .regex(/^\+[1-9]\d{7,14}$/, "Phone number must be in international E.164 format (e.g., +491234567890).")
+    }),
+    params: z.object({}).optional(),
+    query: z.object({}).optional()
+});
+
+export const updateProfileImageSchema = z.object({
+    body: z.object({}).optional(),
     params: z.object({}).optional(),
     query: z.object({}).optional()
 });

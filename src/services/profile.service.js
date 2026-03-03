@@ -1,7 +1,7 @@
-import {getCityByName, getUserByUsername, getUserProfileById, updateUserProfileById} from "../repositories/profile.repository.js";
+import { getCityByName, getUserByUsername, getUserProfileById, updateUserProfileById } from "../repositories/profile.repository.js";
 
-const normalizeText = (value) => value?.trim();
-const normalizeUsername = (value) => value?.trim();
+const normalizeText = (value) => value ?.trim();
+const normalizeUsername = (value) => value ?.trim();
 
 function failIfUserNotFound(user) {
     if (!user) {
@@ -17,13 +17,13 @@ function failIfCityInvalid(cityName) {
     throw error;
 }
 
-export const getCurrentUserProfile = async (userId) => {
+export const getCurrentUserProfile = async(userId) => {
     const user = await getUserProfileById(userId);
     failIfUserNotFound(user);
     return user;
 };
 
-export const updateUserProfile = async ({
+export const updateUserProfile = async({
     userId,
     username,
     firstName,
@@ -68,4 +68,73 @@ export const updateUserProfile = async ({
     }
 
     return updateUserProfileById(userId, updateData);
+};
+
+// new helper functions for partial updates
+
+export const updateUserName = async({ userId, firstName, familyName }) => {
+    const user = await getUserProfileById(userId);
+    failIfUserNotFound(user);
+
+    const updateData = {};
+    if (firstName !== undefined) updateData.firstName = normalizeText(firstName);
+    if (familyName !== undefined) updateData.familyName = normalizeText(familyName);
+
+    if (Object.keys(updateData).length === 0) {
+        const error = new Error("No name fields provided for update.");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    return updateUserProfileById(userId, updateData);
+};
+
+export const updateUserAddress = async({ userId, address, postalCode, city }) => {
+    const user = await getUserProfileById(userId);
+    failIfUserNotFound(user);
+
+    const updateData = {};
+    if (address !== undefined) updateData.address = normalizeText(address);
+    if (postalCode !== undefined) updateData.postalCode = normalizeText(postalCode);
+    if (city !== undefined) {
+        const cityRecord = await getCityByName(normalizeText(city));
+        if (!cityRecord) {
+            failIfCityInvalid(city);
+        }
+        updateData.cityId = cityRecord.id;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+        const error = new Error("No address fields provided for update.");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    return updateUserProfileById(userId, updateData);
+};
+
+export const updateUserPhone = async({ userId, phoneNumber }) => {
+    const user = await getUserProfileById(userId);
+    failIfUserNotFound(user);
+
+    if (phoneNumber === undefined) {
+        const error = new Error("Phone number is required.");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    return updateUserProfileById(userId, { phoneNumber: normalizeText(phoneNumber) });
+};
+
+export const updateUserImage = async({ userId, profileImageUrl }) => {
+    const user = await getUserProfileById(userId);
+    failIfUserNotFound(user);
+
+    if (!profileImageUrl) {
+        const error = new Error("Profile image URL is required.");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    return updateUserProfileById(userId, { profileImageUrl });
 };
