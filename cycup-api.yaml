@@ -483,14 +483,11 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-                - firstName
-                - familyName
-                - address
-                - postalCode
-                - city
-                - phoneNumber
+              description: "Any fields may be included; at least one field or profile image required."
               properties:
+                username:
+                  type: string
+                  example: "student123"
                 firstName:
                   type: string
                   example: John
@@ -532,6 +529,132 @@ paths:
                   message:
                     type: string
                     example: "Not authorized to take this action."
+
+  /users/profile/name:
+    put:
+      tags:
+        - Users
+      summary: Update user's name
+      description: Change first and/or family name.
+      operationId: updateUserName
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: At least one of firstName or familyName is required.
+              properties:
+                firstName:
+                  type: string
+                  example: "John"
+                familyName:
+                  type: string
+                  example: "Doe"
+      responses:
+        '200':
+          description: Name updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid input
+  /users/profile/address:
+    put:
+      tags:
+        - Users
+      summary: Update user's address information
+      description: Change address, postal code, or city.
+      operationId: updateUserAddress
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Provide at least one of the address fields to update.
+              properties:
+                address:
+                  type: string
+                  example: "456 Another St"
+                postalCode:
+                  type: string
+                  example: "54321"
+                city:
+                  type: string
+                  example: "Munich"
+      responses:
+        '200':
+          description: Address updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid input
+  /users/profile/phone:
+    put:
+      tags:
+        - Users
+      summary: Update user's phone number
+      description: Change the phone number on file.
+      operationId: updateUserPhone
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - phoneNumber
+              properties:
+                phoneNumber:
+                  type: string
+                  example: "+491234567890"
+      responses:
+        '200':
+          description: Phone number updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid input
+  /users/profile/image:
+    post:
+      tags:
+        - Users
+      summary: Upload or change profile image
+      description: Send a multipart/form-data request with a single file field named `profileImage`.
+      operationId: updateUserProfileImage
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                profileImage:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Profile image updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid input
 
   # ============================================
   # Reference Data Endpoints
