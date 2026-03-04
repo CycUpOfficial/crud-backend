@@ -12,7 +12,7 @@ import { writeLimiter, readLimiter } from "../middlewares/throttle.middleware.js
 const router = Router();
 
 router.post(
-    "/saved_search", writeLimiter,
+    "/saved-search", writeLimiter,
     validateRequest(createSavedSearchSchema),
     asyncHandler(createSavedSearchController)
 );
