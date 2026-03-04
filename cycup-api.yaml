@@ -962,6 +962,21 @@ paths:
                       $ref: '#/components/schemas/ItemSummary'
                   pagination:
                     $ref: '#/components/schemas/Pagination'
+                  props:
+                    type: object
+                    properties:
+                      minPrice:
+                        type: number
+                        format: float
+                        nullable: true
+                        description: Minimum price among the filtered items.
+                        example: 100
+                      maxPrice:
+                        type: number
+                        format: float
+                        nullable: true
+                        description: Maximum price among the filtered items.
+                        example: 1000
 
   /items/{itemId}:
     get:

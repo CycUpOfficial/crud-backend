@@ -14,13 +14,13 @@ export const toItemResponseDto = (item, req) => ({
     id: item.id,
     title: item.title,
     categoryId: item.categoryId,
-    category: item.category?.name ?? null,
+    category: item.category ?.name ?? null,
     brandName: item.brandName,
     condition: item.condition,
     description: item.description,
     address: item.address,
     cityId: item.cityId,
-    city: item.city?.name ?? null,
+    city: item.city ?.name ?? null,
     itemType: item.itemType,
     sellingPrice: item.sellingPrice,
     lendingPrice: item.lendingPrice,
@@ -37,29 +37,33 @@ export const toItemResponseDto = (item, req) => ({
 export const toItemSummaryDto = (item, req) => ({
     id: item.id,
     title: item.title,
-    mainImage: buildFileUrl(req, item.photos?.[0]?.photoUrl ?? null),
+    mainImage: buildFileUrl(req, item.photos ?.[0] ?.photoUrl ?? null),
     sellingPrice: item.sellingPrice,
     lendingPrice: item.lendingPrice,
     lendingUnit: item.rentUnit,
-    city: item.city?.name,
+    city: item.city ?.name,
     itemType: item.itemType
 });
 
-export const toItemsListResponseDto = ({ items, pagination }, req) => ({
+export const toItemsListResponseDto = ({ items, pagination, props }, req) => ({
     items: items.map((item) => toItemSummaryDto(item, req)),
-    pagination
+    pagination,
+    props: {
+        minPrice: props ?.minPrice ?? null,
+        maxPrice: props ?.maxPrice ?? null
+    }
 });
 
 export const toItemDetailResponseDto = (item, req) => ({
     ...toItemResponseDto(item, req),
     relatedItemIds: item.relatedItemIds ?? [],
-    owner: item.owner
-        ? {
+    owner: item.owner ?
+        {
             id: item.owner.id,
             username: item.owner.username,
             firstName: item.owner.firstName,
             familyName: item.owner.familyName,
             email: item.owner.email
-        }
-        : null
+        } :
+        null
 });

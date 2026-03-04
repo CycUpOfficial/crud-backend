@@ -8,6 +8,7 @@ import {
     listRelatedItemIds,
     listItems as listItemsRepository,
     countItems,
+    getFilteredItemsPriceBounds,
     updateItemById,
     updateItemWithPhotos,
     softDeleteItemById,
@@ -15,7 +16,21 @@ import {
 } from "../repositories/items.repository.js";
 import { getUserByEmail } from "../repositories/auth.repository.js";
 
-const normalizeText = (value) => value?.trim();
+const normalizeText = (value) => value ?.trim();
+
+const toNumericPrice = (value) => {
+    if (value === null || value === undefined) return null;
+    if (typeof value === "number") return value;
+    if (typeof value === "string") {
+        const parsed = Number(value);
+        return Number.isNaN(parsed) ? null : parsed;
+    }
+    if (typeof value ?.toNumber === "function") {
+        return value.toNumber();
+    }
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? null : parsed;
+};
 
 const failIfUserNotFound = (user) => {
     if (!user) {
@@ -121,7 +136,7 @@ const validateItemPricing = ({ itemType, sellingPrice, lendingPrice, rentUnit })
     }
 };
 
-export const createItem = async ({
+export const createItem = async({
     userId,
     title,
     categoryId,
@@ -207,7 +222,7 @@ const buildOrderBy = ({ itemType, sortBy, sortOrder }) => {
     return { createdAt: order };
 };
 
-export const listItems = async ({
+export const listItems = async({
     search,
     city,
     itemType,
@@ -220,7 +235,7 @@ export const listItems = async ({
     limit = 20
 } = {}) => {
     const priceFilter = buildPriceFilter({ itemType, minPrice, maxPrice });
-    if (priceFilter?.__noResults) {
+    if (priceFilter ?.__noResults) {
         return {
             items: [],
             pagination: {
@@ -228,6 +243,10 @@ export const listItems = async ({
                 limit,
                 total: 0,
                 totalPages: 0
+            },
+            props: {
+                minPrice: null,
+                maxPrice: null
             }
         };
     }
@@ -265,14 +284,15 @@ export const listItems = async ({
     const safePage = Math.max(page, 1);
     const skip = (safePage - 1) * safeLimit;
 
-    const [items, total] = await Promise.all([
+    const [items, total, priceBounds] = await Promise.all([
         listItemsRepository({
             where,
             orderBy: buildOrderBy({ itemType, sortBy, sortOrder }),
             skip,
             take: safeLimit
         }),
-        countItems(where)
+        countItems(where),
+        getFilteredItemsPriceBounds({ where, itemType })
     ]);
 
     return {
@@ -282,11 +302,15 @@ export const listItems = async ({
             limit: safeLimit,
             total,
             totalPages: total ? Math.ceil(total / safeLimit) : 0
+        },
+        props: {
+            minPrice: toNumericPrice(priceBounds.minPrice),
+            maxPrice: toNumericPrice(priceBounds.maxPrice)
         }
     };
 };
 
-export const getItemDetails = async ({ itemId }) => {
+export const getItemDetails = async({ itemId }) => {
     const item = await getItemWithDetails(itemId);
     if (!item || item.status !== "published" || item.isDisabledByAdmin) {
         failIfItemNotFound();
@@ -302,7 +326,7 @@ export const getItemDetails = async ({ itemId }) => {
     };
 };
 
-export const updateItem = async ({
+export const updateItem = async({
     itemId,
     userId,
     title,
@@ -389,14 +413,14 @@ export const updateItem = async ({
     if (lendingPrice !== undefined || itemType !== undefined) updateData.lendingPrice = nextLendingPrice ?? null;
     if (rentUnit !== undefined || itemType !== undefined) updateData.rentUnit = nextRentUnit ?? null;
 
-    if (photos?.length) {
+    if (photos ?.length) {
         return updateItemWithPhotos(itemId, updateData, photos);
     }
 
     return updateItemById(itemId, updateData);
 };
 
-export const deleteItem = async ({ itemId, userId }) => {
+export const deleteItem = async({ itemId, userId }) => {
     const item = await getItemById(itemId);
     if (!item) {
         failIfItemNotFound();
@@ -414,7 +438,7 @@ export const deleteItem = async ({ itemId, userId }) => {
     return { deleted: true };
 };
 
-export const markItemAsSold = async ({ itemId, userId, buyerEmail }) => {
+export const markItemAsSold = async({ itemId, userId, buyerEmail }) => {
     const item = await getItemById(itemId);
     if (!item || item.isDisabledByAdmin) {
         failIfItemNotFound();
