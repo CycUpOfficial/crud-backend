@@ -146,6 +146,7 @@ export const listItems = async (req, res) => {
     const {
         search,
         city,
+        categories,
         itemType,
         condition,
         minPrice,
@@ -159,6 +160,7 @@ export const listItems = async (req, res) => {
     const response = await listItemsService({
         search,
         city,
+        categories,
         itemType,
         condition,
         minPrice,

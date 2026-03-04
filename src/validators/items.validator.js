@@ -6,6 +6,18 @@ const toNumber = (value) => {
     return Number.isNaN(parsed) ? value : parsed;
 };
 
+const toStringArray = (value) => {
+    if (value === undefined || value === null || value === "") return undefined;
+
+    const values = Array.isArray(value) ? value : [value];
+    const normalized = values
+        .flatMap((entry) => String(entry).split(","))
+        .map((entry) => entry.trim())
+        .filter((entry) => entry.length > 0);
+
+    return normalized.length ? normalized : undefined;
+};
+
 export const createItemSchema = z.object({
     body: z.object({
         title: z.string().trim().min(1).max(100),
@@ -61,6 +73,7 @@ export const listItemsSchema = z.object({
         .object({
             search: z.string().trim().min(1).optional(),
             city: z.string().trim().min(1).optional(),
+            categories: z.preprocess(toStringArray, z.array(z.uuid()).min(1).optional()),
             itemType: z.enum(["selling", "giveaway", "lending"]).optional(),
             condition: z.enum(["new", "used"]).optional(),
             minPrice: z.preprocess(toNumber, z.number().nonnegative().optional()),
