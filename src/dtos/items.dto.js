@@ -67,7 +67,6 @@ export const toItemDetailResponseDto = (item, req) => ({
         lendingUnit: relatedItem.rentUnit,
         itemType: relatedItem.itemType
     })),
-    relatedItemIds: item.relatedItemIds ?? [],
     owner: item.owner ? {
         id: item.owner.id,
         username: item.owner.username,
