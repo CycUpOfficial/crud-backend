@@ -225,6 +225,7 @@ const buildOrderBy = ({ itemType, sortBy, sortOrder }) => {
 export const listItems = async({
     search,
     city,
+    categories,
     itemType,
     condition,
     minPrice,
@@ -266,6 +267,10 @@ export const listItems = async({
 
     if (city) {
         where.city = { name: { contains: city, mode: "insensitive" } };
+    }
+
+    if (categories?.length) {
+        where.categoryId = { in: categories };
     }
 
     if (itemType) {
