@@ -269,7 +269,7 @@ export const listItems = async({
         where.city = { name: { contains: city, mode: "insensitive" } };
     }
 
-    if (categories?.length) {
+    if (categories ?.length) {
         where.categoryId = { in: categories };
     }
 
@@ -327,6 +327,7 @@ export const getItemDetails = async({ itemId }) => {
 
     return {
         ...item,
+        relatedItems,
         relatedItemIds: relatedItems.map((related) => related.id)
     };
 };

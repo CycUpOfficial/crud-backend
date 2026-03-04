@@ -60,16 +60,19 @@ export const countItems = (where) =>
 const buildPriceFieldWhere = ({ where, field }) => ({
     ...where,
     AND: [...(where.AND ?? []), {
-        [field]: { not: null } }]
+        [field]: { not: null }
+    }]
 });
 
 const aggregatePriceByField = async({ where, field }) => {
     const aggregate = await prisma.item.aggregate({
         where: buildPriceFieldWhere({ where, field }),
         _min: {
-            [field]: true },
+            [field]: true
+        },
         _max: {
-            [field]: true }
+            [field]: true
+        }
     });
 
     return {
@@ -188,7 +191,21 @@ export const listRelatedItemIds = ({ itemId, categoryId, limit = 10 }) =>
         },
         orderBy: { createdAt: "desc" },
         take: limit,
-        select: { id: true }
+        select: {
+            id: true,
+            title: true,
+            description: true,
+            itemType: true,
+            sellingPrice: true,
+            lendingPrice: true,
+            rentUnit: true,
+            city: { select: { name: true } },
+            photos: {
+                where: { isMain: true },
+                take: 1,
+                select: { photoUrl: true, isMain: true }
+            }
+        }
     });
 
 export const updateItemById = (itemId, data) =>

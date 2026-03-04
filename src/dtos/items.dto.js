@@ -56,14 +56,23 @@ export const toItemsListResponseDto = ({ items, pagination, props }, req) => ({
 
 export const toItemDetailResponseDto = (item, req) => ({
     ...toItemResponseDto(item, req),
+    relatedItems: (item.relatedItems ?? []).map((relatedItem) => ({
+        id: relatedItem.id,
+        title: relatedItem.title,
+        description: relatedItem.description,
+        location: relatedItem.city ?.name ?? null,
+        mainImage: buildFileUrl(req, relatedItem.photos ?.[0] ?.photoUrl ?? null),
+        sellingPrice: relatedItem.sellingPrice,
+        lendingPrice: relatedItem.lendingPrice,
+        lendingUnit: relatedItem.rentUnit,
+        itemType: relatedItem.itemType
+    })),
     relatedItemIds: item.relatedItemIds ?? [],
-    owner: item.owner ?
-        {
-            id: item.owner.id,
-            username: item.owner.username,
-            firstName: item.owner.firstName,
-            familyName: item.owner.familyName,
-            email: item.owner.email
-        } :
-        null
+    owner: item.owner ? {
+        id: item.owner.id,
+        username: item.owner.username,
+        firstName: item.owner.firstName,
+        familyName: item.owner.familyName,
+        email: item.owner.email
+    } : null
 });
