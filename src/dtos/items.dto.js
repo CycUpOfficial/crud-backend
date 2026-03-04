@@ -73,6 +73,8 @@ export const toItemDetailResponseDto = (item, req) => ({
         username: item.owner.username,
         firstName: item.owner.firstName,
         familyName: item.owner.familyName,
-        email: item.owner.email
+        email: item.owner.email,
+        location: item.owner.city ?.name ?? item.owner.address ?? null,
+        profilePicture: buildFileUrl(req, item.owner.profileImageUrl)
     } : null
 });

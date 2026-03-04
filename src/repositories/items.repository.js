@@ -153,7 +153,14 @@ export const getItemWithDetails = (itemId) =>
                     username: true,
                     firstName: true,
                     familyName: true,
-                    email: true
+                    email: true,
+                    address: true,
+                    profileImageUrl: true,
+                    city: {
+                        select: {
+                            name: true
+                        }
+                    }
                 }
             }
         }
