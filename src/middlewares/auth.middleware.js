@@ -17,6 +17,10 @@ const PUBLIC_METHOD_ROUTES = new Set([
     "GET /items"
 ]);
 
+function isPublicItemsRoute(req) {
+    return req.method === "GET" && /^\/items\/[^/]+$/.test(req.path);
+}
+
 function passIfRequestMethodIsOptions(req, next) {
     if (req.method === "OPTIONS") {
         next();
@@ -30,6 +34,10 @@ function passIfRequestedResourceIsPublic(req, next) {
         next();
         return true;
     }
+    if (isPublicItemsRoute(req)) {
+        next();
+        return true;
+    }
     if (PUBLIC_PATHS.has(req.path)) {
         next();
         return true;
@@ -37,12 +45,12 @@ function passIfRequestedResourceIsPublic(req, next) {
     return false;
 }
 
-export const requireAuth = async (req, res, next) => {
+export const requireAuth = async(req, res, next) => {
     if (passIfRequestMethodIsOptions(req, next)) return;
     if (passIfRequestedResourceIsPublic(req, next)) return;
 
     const cookies = req.cookies ?? parseCookies(req.headers.cookie);
-    const sessionToken = cookies?.[env.cookie.name];
+    const sessionToken = cookies ?.[env.cookie.name];
 
     if (!sessionToken) {
         const error = new Error("Not authorized to take this action.");
