@@ -66,8 +66,9 @@ paths:
                     type: string
                     example: Registration successful. Please check your email for verification PIN.
                   userId:
-                    type: integer
-                    example: 123
+                    type: string
+                    format: uuid
+                    example: "550e8400-e29b-41d4-a716-446655440000"
         '400':
           description: Invalid input
           content:
@@ -224,9 +225,10 @@ paths:
                 type: object
                 properties:
                   userId:
-                    type: integer
+                    type: string
+                    format: uuid
                     description: ID of the authenticated user
-                    example: 123
+                    example: "550e8400-e29b-41d4-a716-446655440000"
         '401':
           description: Invalid credentials
           content:
@@ -289,8 +291,9 @@ paths:
                 type: object
                 properties:
                   id:
-                    type: integer
-                    example: 123
+                    type: string
+                    format: uuid
+                    example: "550e8400-e29b-41d4-a716-446655440000"
                   email:
                     type: string
                     format: email
@@ -482,8 +485,9 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
-          example: 1
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
       responses:
         '200':
           description: Messages retrieved successfully
@@ -733,8 +737,9 @@ paths:
                       type: object
                       properties:
                         id:
-                          type: integer
-                          example: 1
+                          type: string
+                          format: uuid
+                          example: "550e8400-e29b-41d4-a716-446655440000"
                         name:
                           type: string
                           example: "Electronics"
@@ -760,8 +765,9 @@ paths:
                       type: object
                       properties:
                         id:
-                          type: integer
-                          example: 1
+                          type: string
+                          format: uuid
+                          example: "550e8400-e29b-41d4-a716-446655440000"
                         name:
                           type: string
                           example: "Berlin"
@@ -800,9 +806,10 @@ paths:
                   description: Item title (maximum 100 characters, approximately 10-15 words)
                   example: "MacBook Pro 13 inch"
                 categoryId:
-                  type: integer
+                  type: string
+                  format: uuid
                   description: Category ID from /categories endpoint
-                  example: 1
+                  example: "8f5f0d3a-f5e9-4f8b-901f-f4867e0fc86e"
                 brandName:
                   type: string
                   example: "Apple"
@@ -817,9 +824,10 @@ paths:
                   type: string
                   example: "123 Main Street"
                 cityId:
-                  type: integer
+                  type: string
+                  format: uuid
                   description: City ID from /cities endpoint
-                  example: 1
+                  example: "e9f95c42-2a7b-4958-b6dd-9cbdbc962db6"
                 itemType:
                   $ref: '#/components/schemas/ItemType'
                 sellingPrice:
@@ -1001,8 +1009,9 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
-          example: 1
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
       responses:
         '200':
           description: Item details retrieved successfully
@@ -1034,8 +1043,9 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
-          example: 1
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
       requestBody:
         required: true
         content:
@@ -1048,7 +1058,8 @@ paths:
                   maxLength: 100
                   description: Item title (maximum 100 characters)
                 categoryId:
-                  type: integer
+                  type: string
+                  format: uuid
                   description: Category ID from /categories endpoint
                 brandName:
                   type: string
@@ -1061,7 +1072,8 @@ paths:
                 address:
                   type: string
                 cityId:
-                  type: integer
+                  type: string
+                  format: uuid
                   description: City ID from /cities endpoint
                 itemType:
                   $ref: '#/components/schemas/ItemType'
@@ -1143,8 +1155,9 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
-          example: 1
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
       responses:
         '200':
           description: Item deleted (hidden) successfully
@@ -1201,8 +1214,9 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
-          example: 1
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
       requestBody:
         required: true
         content:
@@ -1443,8 +1457,9 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
-          example: 1
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
       requestBody:
         required: true
         content:
@@ -1597,8 +1612,9 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
-          example: 1
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
       responses:
         '200':
           description: Notification marked as read
@@ -1737,8 +1753,9 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
-          example: 1
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
       requestBody:
         required: true
         content:
@@ -1805,8 +1822,9 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
-          example: 1
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
       responses:
         '200':
           description: Saved search deleted successfully
@@ -1900,8 +1918,9 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
-          example: 1
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
       responses:
         '200':
           description: Item disabled successfully
@@ -1958,8 +1977,9 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
-          example: 1
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
       responses:
         '200':
           description: Item removed successfully
@@ -2082,8 +2102,9 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
-          example: 1
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
       requestBody:
         required: true
         content:
@@ -2153,8 +2174,9 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
-          example: 1
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
       responses:
         '200':
           description: User unblocked successfully
@@ -2290,9 +2312,10 @@ paths:
                 - description
               properties:
                 userId:
-                  type: integer
+                  type: string
+                  format: uuid
                   description: ID of reported user (if type is 'user')
-                  example: 2
+                  example: "550e8400-e29b-41d4-a716-446655440000"
                 description:
                   type: string
                   description: Description of the issue
@@ -2309,8 +2332,9 @@ paths:
                     type: string
                     example: Report submitted successfully
                   reportId:
-                    type: integer
-                    example: 1
+                    type: string
+                    format: uuid
+                    example: "550e8400-e29b-41d4-a716-446655440000"
         '400':
           description: Invalid input
         '401':
@@ -2349,8 +2373,9 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          example: 1
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
         email:
           type: string
           format: email
@@ -2390,16 +2415,18 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          example: 1
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
         title:
           type: string
           maxLength: 100
           example: "MacBook Pro 13 inch"
         categoryId:
-          type: integer
+          type: string
+          format: uuid
           description: Category ID
-          example: 1
+          example: "8f5f0d3a-f5e9-4f8b-901f-f4867e0fc86e"
         category:
           type: string
           description: Category name (for display)
@@ -2417,9 +2444,10 @@ components:
           type: string
           example: "123 Main Street"
         cityId:
-          type: integer
+          type: string
+          format: uuid
           description: City ID
-          example: 1
+          example: "e9f95c42-2a7b-4958-b6dd-9cbdbc962db6"
         city:
           type: string
           description: City name (for display)
@@ -2474,8 +2502,9 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          example: 1
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
         title:
           type: string
           maxLength: 100
@@ -2522,8 +2551,9 @@ components:
               type: object
               properties:
                 id:
-                  type: integer
-                  example: 1
+                  type: string
+                  format: uuid
+                  example: "550e8400-e29b-41d4-a716-446655440000"
                 firstName:
                   type: string
                   example: "John"
@@ -2539,11 +2569,13 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          example: 1
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
         itemId:
-          type: integer
-          example: 1
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
         rating:
           type: integer
           minimum: 1
@@ -2554,8 +2586,9 @@ components:
           nullable: true
           example: "Great seller, item as described!"
         raterId:
-          type: integer
-          example: 2
+          type: string
+          format: uuid
+          example: "9b2f8a7e-6a57-4f7e-b8d5-9f4f4e9d8f21"
         raterName:
           type: string
           example: "Jane Smith"
@@ -2568,8 +2601,9 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          example: 1
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
         type:
           type: string
           enum: [saved_search_match, rating_received, item_status_change]
@@ -2596,8 +2630,9 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          example: 1
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
         searchTerms:
           type: array
           items:
@@ -2621,8 +2656,9 @@ components:
       type: object
       properties:
         id:
-          type: integer
-          example: 1
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
 
         description:
           type: string
