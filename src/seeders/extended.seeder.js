@@ -1,4 +1,6 @@
 import crypto from "crypto";
+import { readdir } from "fs/promises";
+import path from "path";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../db/index.js";
 
@@ -38,7 +40,7 @@ const ITEM_TEMPLATES = [{
         ]
     },
     {
-        title: "Mountain Bike",
+        title: "electronic bike",
         description: "Trek mountain bike, great for weekend trips. Recently serviced, new tires.",
         brandName: "Trek",
         condition: "used",
@@ -49,7 +51,7 @@ const ITEM_TEMPLATES = [{
         ]
     },
     {
-        title: "Coffee Maker",
+        title: "Sound Bar",
         description: "Delonghi espresso machine, works perfectly. Includes accessories.",
         brandName: "Delonghi",
         condition: "used",
@@ -94,7 +96,7 @@ const ITEM_TEMPLATES = [{
         ]
     },
     {
-        title: "Textbooks Bundle",
+        title: "Trouser",
         description: "Free textbooks for computer science students. No longer needed.",
         brandName: null,
         condition: "used",
@@ -104,7 +106,7 @@ const ITEM_TEMPLATES = [{
         ]
     },
     {
-        title: "Bluetooth Speaker",
+        title: "Macbook Charger",
         description: "Portable Bluetooth speaker, great sound quality. JBL brand.",
         brandName: "JBL",
         condition: "used",
@@ -115,7 +117,7 @@ const ITEM_TEMPLATES = [{
         ]
     },
     {
-        title: "Desk Chair",
+        title: "study table",
         description: "Ergonomic office chair, adjustable height. Good condition.",
         brandName: "IKEA",
         condition: "used",
@@ -126,7 +128,7 @@ const ITEM_TEMPLATES = [{
         ]
     },
     {
-        title: "Vintage Bookshelf",
+        title: "Sofa and mat",
         description: "Wooden vintage bookshelf, solid wood. 180cm height.",
         brandName: null,
         condition: "used",
@@ -153,11 +155,132 @@ const COMMENTS = [
 
 const NOTIFICATION_MESSAGES = [
     { type: "item_status_change", title: "Item sold", message: "Your item 'Gaming Laptop' has been marked as sold." },
-    { type: "item_status_change", title: "Item expired", message: "Your item 'Mountain Bike' listing has expired." },
+    { type: "item_status_change", title: "Item expired", message: "Your item 'electronic bike' listing has expired." },
     { type: "saved_search_match", title: "New match found", message: "A new item matching your saved search 'electronics' is available." },
     { type: "rating_received", title: "New rating received", message: "You received a 5-star rating on your item." },
-    { type: "saved_search_match", title: "Search alert", message: "New item 'Coffee Maker' matches your saved search." },
+    { type: "saved_search_match", title: "Search alert", message: "New item 'Sound Bar' matches your saved search." },
 ];
+
+const IMAGE_FILE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".svg"]);
+
+const IMAGE_TITLE_OVERRIDES = {
+    "MACBOOK CHARGER.jpg": "Macbook Charger",
+    "images.jpg": "Trouser",
+    "SOUND BAR.jpg": "Sound Bar",
+    "e-bike_shutterstock-1024x683.jpg": "electronic bike",
+    "xavier-teo-SxAXphIPWeg-unsplash.jpg": "White Sneaker",
+    "vjiyf_512.webp": "Multiplug",
+    "s-l1200.jpg": "Double Bed",
+    "jM9JCM8RBSykEorEqDqpzW.jpg": "Multi Sound system",
+    "images (6).jpg": "Mountain Bike",
+    "images (5).jpg": "Lenovo Laptop",
+    "images (4).jpg": "Single Couch",
+    "images (2).jpg": "Nike Sneakers",
+    "images (1).jpg": "Black Shoe",
+    "Cvsf8xmmpjePwVmGNLkrwU.jpg": "samsung galaxy note 20",
+    "9031_2671.jpg": "Office Chaire",
+    "7f9b7bef4f32b3f5c8f29afaf5d2500b.jpg_720x720q80.jpg": "Laptop charger",
+    "5520c970-980b-443c-9900-ad3b548141eb.14e5e26e00dd5cff539a0ef172231d5e.webp": "3 pin multiplug",
+    "2.TCH-112-R.jpg": "Table",
+    "bf448cea49c2c831b6524ea235245277.jpg": "Bed side table",
+    "9155ccf840f54edaa54afd740ec1902c.jpg": "Iphone 15 pro",
+    "71E9sRv-6IL._UY1000_.jpg": "winter jacket"
+};
+
+const titleFromFileName = (fileName) => {
+    const withoutExtension = fileName.replace(/\.[^.]+$/, "");
+    const normalized = withoutExtension
+        .replace(/[_-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    // Avoid using a UUID/hash-like filename as an item title.
+    if (!normalized || /^[0-9a-f]{24,}$/i.test(normalized.replace(/\s+/g, ""))) {
+        return "Student Item";
+    }
+
+    return normalized
+        .split(" ")
+        .map((part) => {
+            if (!part) {
+                return part;
+            }
+            return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+        })
+        .join(" ");
+};
+
+const buildTemplatesFromAllImages = async() => {
+    const configuredDir = process.env.STORAGE_LOCAL_DIR || "uploads";
+    const imagesDirectory = path.resolve(process.cwd(), configuredDir);
+
+    let files = [];
+    try {
+        files = await readdir(imagesDirectory, { withFileTypes: true });
+    } catch (error) {
+        console.warn(`Skipping dynamic image-based items. Could not read ${imagesDirectory}: ${error.message}`);
+        return [];
+    }
+
+    const photosAlreadyCovered = new Set(
+        ITEM_TEMPLATES.flatMap((template) => template.photos)
+    );
+
+    const imageFiles = files
+        .filter((entry) => entry.isFile())
+        .map((entry) => entry.name)
+        .filter((fileName) => IMAGE_FILE_EXTENSIONS.has(path.extname(fileName).toLowerCase()))
+        .sort((a, b) => a.localeCompare(b));
+
+    const generatedTemplates = [];
+    for (let i = 0; i < imageFiles.length; i++) {
+        const fileName = imageFiles[i];
+        const photoUrl = `/uploads/${fileName}`;
+        if (photosAlreadyCovered.has(photoUrl)) {
+            continue;
+        }
+
+        const inferredTitle = IMAGE_TITLE_OVERRIDES[fileName] || titleFromFileName(fileName);
+        const mode = i % 3;
+        if (mode === 0) {
+            generatedTemplates.push({
+                title: inferredTitle,
+                description: `${inferredTitle} available in good condition.`,
+                brandName: null,
+                condition: "used",
+                itemType: "selling",
+                sellingPrice: `${40 + (i % 9) * 15}.00`,
+                photos: [photoUrl]
+            });
+            continue;
+        }
+
+        if (mode === 1) {
+            generatedTemplates.push({
+                title: inferredTitle,
+                description: `${inferredTitle} available for short-term lending.`,
+                brandName: null,
+                condition: "used",
+                itemType: "lending",
+                lendingPrice: `${5 + (i % 6) * 3}.00`,
+                rentUnit: "day",
+                photos: [photoUrl]
+            });
+            continue;
+        }
+
+        generatedTemplates.push({
+            title: inferredTitle,
+            description: `${inferredTitle} available as giveaway for pickup.`,
+            brandName: null,
+            condition: "used",
+            itemType: "giveaway",
+            photos: [photoUrl]
+        });
+    }
+
+    return generatedTemplates;
+};
 
 export const seedExtendedFakeData = async({ force = false } = {}) => {
     if (force) {
@@ -292,17 +415,26 @@ export const seedExtendedFakeData = async({ force = false } = {}) => {
 
     // Check existing items count
     const existingItemCount = await prisma.item.count();
+    const dynamicTemplates = await buildTemplatesFromAllImages();
+    const allItemTemplates = [...ITEM_TEMPLATES, ...dynamicTemplates];
 
-    if (existingItemCount < 15) {
-        const newItemsToCreate = ITEM_TEMPLATES.slice(0, 8);
-        const statuses = ["published", "published", "published", "sold", "deleted", "expired", "published", "published"];
+    if (existingItemCount < allItemTemplates.length) {
+        const newItemsToCreate = allItemTemplates;
 
         for (let i = 0; i < newItemsToCreate.length; i++) {
             const template = newItemsToCreate[i];
             const seller = sellers[i % sellers.length];
-            const shouldHaveBuyer = template.itemType === "selling" && statuses[i] === "sold";
+            let status = "published";
+            if (template.itemType === "selling" && i % 7 === 0) {
+                status = "sold";
+            } else if (i % 11 === 0) {
+                status = "expired";
+            } else if (i % 13 === 0) {
+                status = "deleted";
+            }
+
+            const shouldHaveBuyer = template.itemType === "selling" && status === "sold";
             const buyer = shouldHaveBuyer ? buyers[0] : null;
-            const status = statuses[i];
 
             const item = await prisma.item.create({
                 data: {
